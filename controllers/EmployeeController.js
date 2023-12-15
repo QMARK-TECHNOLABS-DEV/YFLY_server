@@ -1,7 +1,7 @@
 const Employee = require("../models/EmployeeModel")
 const bcrypt = require("bcrypt");
-const { findByIdAndUpdate } = require("../models/StudentModel");
-const emailGenerator = require("../utils/EmailGenerator");
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
 const employeeCtrl = {};
 
 //Create Employee;
@@ -73,7 +73,10 @@ employeeCtrl.GetAllEmployees = async(req,res)=>{
 
 employeeCtrl.GetEmployee = async(req,res)=>{
     const empId = req.params.id; 
-    if(!empId) return res.status(400).json({msg:"Missing employee id"})
+
+    if(!(typeof empId === 'string' || ObjectId.isValid(empId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
 
     try {
         const employee = await Employee.findById(empId,{password:0});
@@ -92,7 +95,10 @@ employeeCtrl.GetEmployee = async(req,res)=>{
 employeeCtrl.UpdateEmployee = async(req,res)=>{
     console.log(req.body);
     const empId = req.body.employeeId; 
-    if(!empId) return res.status(400).json({msg:"Missing employee id"});
+
+    if(!(typeof empId === 'string' || ObjectId.isValid(empId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
 
     const employee = await Employee.findById(empId);
     if(!employee) return res.status(404).json({msg:"Employee not found"})
@@ -142,7 +148,9 @@ employeeCtrl.ChangePassword = async(req,res)=>{
     const empId = req.body.employeeId;
     const password = req.body.password;
 
-    if(!empId) return res.status(400).json({msg:"Missing employee id"});
+    if(!(typeof empId === 'string' || ObjectId.isValid(empId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
 
     const employee = await Employee.findById(empId);
     if(!employee) return res.status(404).json({msg:"Employee not found"});
@@ -171,7 +179,9 @@ employeeCtrl.ChangePassword = async(req,res)=>{
 employeeCtrl.DeactivateEmployee = async(req,res)=>{
     const empId = req.body.employeeId;
     
-    if(!empId) return res.status(400).json({msg:"Missing employee id"});
+    if(!(typeof empId === 'string' || ObjectId.isValid(empId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
 
     const employee = await Employee.findById(empId);
     if(!employee) return res.status(404).json({msg:"Employee not found"});

@@ -1,5 +1,7 @@
 const Student = require("../models/StudentModel")
 const bcrypt = require("bcrypt");
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
 const studentCtrl = {};
 
 //Create Student;
@@ -69,7 +71,10 @@ studentCtrl.GetAllStudents = async(req,res)=>{
 
 studentCtrl.GetStudent = async(req,res)=>{
     const stdtId = req.params.id;
-    if(!stdtId) return res.status(400).json({msg:"Missing Student Id"})
+
+    if(!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
 
     try{
         const student = await Student.findById(stdtId,{password:0});
@@ -88,7 +93,10 @@ studentCtrl.GetStudent = async(req,res)=>{
 studentCtrl.UpdateStudent = async(req,res)=>{
     console.log(req.body);
     const stdtId = req.body.studentId;
-    if(!stdtId) return res.status(400).json({msg:"Missing student id"});
+
+    if(!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
 
     const student = await Student.findById(stdtId);
     if(!student) return res.status(404).json({msg:"Student not found"});
@@ -139,7 +147,9 @@ studentCtrl.ChangePassword = async(req,res)=>{
     const stdtId = req.body.studentId;
     const password = req.body.password;
 
-    if(!stdtId) return res.status(400).json({msg:"Missing student id"});
+    if(!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
 
     const student = await Student.findById(stdtId);
     if(!student) return res.status(404).json({msg:"Student not found"});
