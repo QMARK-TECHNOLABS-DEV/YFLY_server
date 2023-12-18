@@ -48,8 +48,6 @@ authCtrl.Login = async (req, res) => {
             return res.status(401).json({ msg: "Invalid email" })
         }
 
-        console.log("user",user)
-
         const isValidPassword = await bcrypt.compare(req.body.password, user.password);
         if (!isValidPassword) return res.status(401).json({ msg: "Invalid password" });
 
