@@ -17,12 +17,12 @@ const ClientURL = process.env.ClientURL;
 
 ConnectDB();
 
-app.use(cors({origin:ClientURL, credentials:true}))
+app.use(cors({ origin: ClientURL, credentials: true }))
 app.use(cookieParser())
 app.use(express.json())
-app.use(express.urlencoded({extended:true}))
+app.use(express.urlencoded({ extended: true }))
 
-app.use("/images", express.static(path.join(__dirname,"/public/images")))
+app.use("/images", express.static(path.join(__dirname, "/public/images")))
 
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);
@@ -31,8 +31,8 @@ app.use("/api/student", studentRouter);
 app.use("/api/application", applicationRouter);
 app.use("/api/comment", commentRouter);
 
-app.use("*", (req,res)=>{
+app.use("*", (req, res) => {
     res.sendStatus(404);
 })
 
-app.listen(PORT,()=>console.log(`Server running on port ${PORT}`))
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
