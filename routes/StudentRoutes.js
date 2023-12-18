@@ -10,5 +10,6 @@ router.get("/get/:id", authMiddleware, studentCtrl.GetStudent);
 router.put("/update", authMiddleware, adminCheckMiddleware, studentCtrl.UpdateStudent)
 router.put("/change-password", authMiddleware, studentCtrl.ChangePassword);
 
+router.post("/upload-document/:id", authMiddleware, studentCtrl.UploadDocs)
 
 module.exports = router;

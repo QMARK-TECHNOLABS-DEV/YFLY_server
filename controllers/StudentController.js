@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
 const studentCtrl = {};
+const Application = require("../models/ApplicationModel");
+const fileparser = require("../utils/fileparser")
 
 //Create Student;
 
@@ -180,7 +182,34 @@ studentCtrl.ChangePassword = async(req,res)=>{
 }
 
 
-// Upload files to Firebase;
+// Upload files to AWS S3 Bucket;
+
+studentCtrl.UploadDocs = async(req,res)=>{
+    const applicationId = req.params.id;
+    console.log("*applicationId*",applicationId)
+    if(!applicationId) return res.status(500).json({msg:"Invalid applicationId"})
+
+    await fileparser(req)
+    .then(async(data)=>{
+        console.log("uploaded response data",data)
+
+        await Application.findByIdAndUpdate(applicationId,{
+            $push:{documents:data.Location}
+        })
+
+        res.status(200).json({
+            msg:"Success",
+            data
+        })
+    })
+    .catch((error)=>{
+        console.log(error)
+        res.status(500).json({
+            msg:"An Error Occurred",
+            error
+        })
+    });
+}
 
 
 module.exports = studentCtrl;
