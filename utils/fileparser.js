@@ -11,7 +11,7 @@ const Bucket = process.env.S3_BUCKET;
 const parsefile = async (req)=>{
     return new Promise((resolve,reject)=>{
         let options = {
-            maxFileSize: 100 *  1024 * 1024,
+            maxFileSize: 15 *  1024 * 1024,
             allowEmptyFiles: false
         }
 

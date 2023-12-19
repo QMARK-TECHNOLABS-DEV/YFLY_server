@@ -155,14 +155,14 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
         console.log("not-enrolled",notEnrolledApplications);
 
 
-        res.status(200).json({
-            all:allApplications, 
-            current:currentApplications,
-            completed:completedApplications,
-            deffered:defferredApplications,
-            cancelled:cancelledApplications,
-            notEnrolled:notEnrolledApplications,
-        })
+        res.status(200).json([
+            {name: "All",value:allApplications}, 
+            {name:"Current",value:currentApplications},
+            {name:"Completed",value:completedApplications},
+            {name:"Deffered",value:defferredApplications},
+            {name:"Cancelled",value:cancelledApplications},
+            {name:"Non-enrolled",value:notEnrolledApplications},
+        ])
 
     } catch (error) {
         res.status(500).json({msg:"Something went wrong"})
