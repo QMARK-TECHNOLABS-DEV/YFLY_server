@@ -61,12 +61,27 @@ employeeCtrl.CreateEmployee = async(req,res)=>{
 //Get All Employees;
 
 employeeCtrl.GetAllEmployees = async(req,res)=>{
+    const department = req.query.department;
+
+    // Paginators
+    const page = req.query.page;
+    const entries = req.query.entries;
     
     try {
-        const allEmployees = await Employee.find({isActive:true},{password: 0});
+        const allEmployees = await Employee.find({isActive:true,department},{password: 0});
         console.log(allEmployees);
+
+        let result;
+
+        if(page){
+            if(entries){
+                result = allEmployees.splice(((page-1)*entries),(page*entries))
+            }else{
+                result = allEmployees.splice(((page-1)*10),(page*10))
+            }
+        }
     
-        res.status(200).json(allEmployees);
+        res.status(200).json(result);
         
     } catch (error) {
         res.status(500).json({msg:"Something went wrong"})
@@ -88,8 +103,26 @@ employeeCtrl.GetEmployee = async(req,res)=>{
 
         if(!employee) return res.status(404).json({msg:"Employee not found"});
 
-        res.status(200).json(employee);
+        const withApplications = await Employee.aggregate([
+            {
+                $match:{
+                    _id: new mongoose.Types.ObjectId(empId)
+                }
+            },
+            {
+                $lookup:{
+                    from:"applications",
+                    localField:"currentApplications",
+                    foreignField:"_id",
+                    as:"applicationList"
+                }
+            }
+        ])
+        console.log("withapplications",withApplications);
+
+        res.status(200).json(withApplications);
     } catch (error) {
+        console.log("error",error)
         res.status(500).json({msg:"Something went wrong"});
     }
 }
