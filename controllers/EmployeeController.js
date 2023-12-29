@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const Application = require("../models/ApplicationModel");
 const ObjectId = mongoose.Types.ObjectId;
+
 const employeeCtrl = {};
 
 //Create Employee;
@@ -10,10 +11,15 @@ const employeeCtrl = {};
 employeeCtrl.CreateEmployee = async(req,res)=>{
 
     const {name,email,password,phone,education,
-        department,birthDate,address,image,
-        currentApplications} = req.body;
+        department,birthDate,address} = req.body;
 
-    console.log(req.body)
+    console.log("req.body",req.body);
+    console.log("req.file",req.file)
+
+    let image;
+    if(req.file){
+        image = req.file.location
+    }
 
     if(!name || !email || !password){
         return res.status(400).json({msg:"Invalid inputs"})
@@ -44,8 +50,8 @@ employeeCtrl.CreateEmployee = async(req,res)=>{
             name,email,phone,
             password:hashedPassword,
             education,department,
-            birthDate,address,image,
-            currentApplications
+            birthDate,address,
+            image
         });
 
         const savedDoc = await newDocument.save();
@@ -156,6 +162,10 @@ employeeCtrl.UpdateEmployee = async(req,res)=>{
     }
 
     let {employeeId, ...updates} = req.body;
+
+    if(req.file){
+        updates.image = req.file.location
+    }
 
     if(req.body.password){
         const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;

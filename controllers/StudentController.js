@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
 const studentCtrl = {};
 const Application = require("../models/ApplicationModel");
-const fileparser = require("../utils/fileparser")
 
 //Create Student;
 
@@ -12,9 +11,14 @@ studentCtrl.CreateStudent = async(req,res)=>{
 
     const {name,email,password,phone,
         birthDate,age,qualification,
-        address,image} = req.body;
+        address} = req.body;
         
-    console.log(req.body)
+    console.log(req.body);
+
+    let image;
+    if(req.file){
+        image = req.file.location
+    }
 
     if(!name || !email || !password){
         return res.status(400).json({msg:"Invalid inputs"})
@@ -123,6 +127,10 @@ studentCtrl.UpdateStudent = async(req,res)=>{
 
     let {studentId, ...updates} = req.body;
 
+    if(req.file){
+        updates.image = req.file.location
+    }
+
     if(req.body.password){
         const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
         if(!passwordRegex.test(req.body.password)) return res.status(400).json({ msg: "Invalid password format" });
@@ -179,36 +187,6 @@ studentCtrl.ChangePassword = async(req,res)=>{
     }catch(error){
         res.status(500).json({msg:"Something went wrong"})
     }
-}
-
-
-// Upload files to AWS S3 Bucket;
-
-studentCtrl.UploadDocs = async(req,res)=>{
-    const applicationId = req.params.id;
-    console.log("*applicationId*",applicationId)
-    if(!applicationId) return res.status(500).json({msg:"Invalid applicationId"})
-
-    await fileparser(req)
-    .then(async(data)=>{
-        console.log("uploaded response data",data)
-
-        await Application.findByIdAndUpdate(applicationId,{
-            $push:{documents:data.Location}
-        })
-
-        res.status(200).json({
-            msg:"Success",
-            data
-        })
-    })
-    .catch((error)=>{
-        console.log(error)
-        res.status(500).json({
-            msg:"An Error Occurred",
-            error
-        })
-    });
 }
 
 

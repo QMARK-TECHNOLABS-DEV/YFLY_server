@@ -1,0 +1,31 @@
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const {S3Client} = require('@aws-sdk/client-s3');
+
+const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+const region = process.env.S3_REGION;
+const Bucket = process.env.S3_BUCKET;
+
+const s3Client = new S3Client({
+    region: region,
+    credentials:{
+        accessKeyId:accessKeyId,
+        secretAccessKey:secretAccessKey
+    }
+})
+
+// Upload files to AWS S3 Bucket;
+
+const upload = multer({
+    storage: multerS3({
+        s3: s3Client,
+        bucket:Bucket,
+        key:(req,file,cb)=>{
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
+            cb(null, `${file.originalname}-${uniqueSuffix}`);
+        },
+    }),
+});
+
+module.exports = upload;

@@ -257,4 +257,32 @@ applicationCtrl.DeleteApplication = async(req,res)=>{
     }
 }
 
+
+// Upload files to AWS S3 Bucket 2nd part => Update doc with uploaded urls;
+
+applicationCtrl.UploadDocs = async(req,res)=>{
+    const applicationId = req.params.id;
+    console.log("*applicationId*",applicationId)
+    if(!applicationId) return res.status(500).json({msg:"Invalid applicationId"})
+
+    console.log("req.body", req.body)
+    console.log("req.files",req.files)
+
+    const newDocuments = req.files.map((file)=>(
+        {name:file.originalname, location:file.location}
+    ))
+
+    try {
+        await Application.findByIdAndUpdate(applicationId,{
+            $push:{documents:{$each:newDocuments}}
+        })
+        
+        res.status(200).json({msg:"Documents uploaded successfully"})
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({msg:"Documents upload  failed"})
+    }
+
+}
+
 module.exports = applicationCtrl;

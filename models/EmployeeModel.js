@@ -18,7 +18,7 @@ const EmployeeSchema = new mongoose.Schema({
         pin:{type:String},
     }},
     image:{type:String},
-    currentApplications: {type:Array},
+    currentApplications: {type:Array, default:[]},
     isActive:{type:Boolean, default:true}
 })
 
