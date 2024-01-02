@@ -12,11 +12,10 @@ router.put("/update", authMiddleware, applicationCtrl.UpdateApplication);
 router.delete("/delete/:id", authMiddleware, adminCheckMiddleware, applicationCtrl.DeleteApplication);
 
 router.post("/upload-document/:id/:name", authMiddleware, applicationCtrl.CheckDocName, upload.single('document'), applicationCtrl.UploadDoc)
-
 router.get("/get-document/:id/:name", authMiddleware, applicationCtrl.GetDocument);
-
 router.put("/delete-document/:id/:name", authMiddleware, applicationCtrl.DeleteDocument);
-
 router.put("/update-document/:id/:name", authMiddleware, upload.single('document'), applicationCtrl.UpdateDocument);
+
+router.put("/change-status", authMiddleware, applicationCtrl.ChangeStepStatus)
 
 module.exports = router;

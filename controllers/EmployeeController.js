@@ -2,6 +2,7 @@ const Employee = require("../models/EmployeeModel")
 const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const Application = require("../models/ApplicationModel");
+const Work = require("../models/WorkModel");
 const ObjectId = mongoose.Types.ObjectId;
 
 const employeeCtrl = {};
@@ -311,5 +312,124 @@ employeeCtrl.GetAssignedWorks = async(req,res)=>{
 
 }
 
+
+employeeCtrl.RetrieveWorks = async(req,res)=>{
+    const employeeId = req.params.id;
+
+    if(!employeeId) return res.status(400).json({msg:"Invalid Employee Id"});
+
+    try {
+        const employee = await Employee.findById(employeeId);
+        if(!employee) return res.status(404).json({msg:"Employee Not Found"});
+
+        const currentWorks = employee.currentWorks;
+
+        const result = await Work.aggregate([
+            {
+                $match:{_id:{$in:[...currentWorks]}}
+            },
+            {
+                $lookup:{
+                    from:'applications',
+                    localField:'applicationId',
+                    foreignField:'_id',
+                    as:'applicationDetails'
+                }
+            },
+            {
+                $unwind:'$applicationDetails'
+            },
+            {
+                $lookup:{
+                    from:'students',
+                    localField:'studentId',
+                    foreignField:'_id',
+                    as:'studentDetails'
+                }
+            },
+            {
+                $unwind:'$studentDetails'
+            },
+            {
+                $lookup:{
+                    from:'employees',
+                    localField:'assignee',
+                    foreignField:'_id',
+                    as:'employeeDetails'
+                }
+            },
+            {
+                $unwind:'$employeeDetails'
+            },
+            {
+                $addFields:{
+                    'studentName':'$studentDetails.name',
+                    'assigneeName':'$employeeDetails.name',
+                    'country':'$applicationDetails.country',
+                    'university':'$applicationDetails.university',
+                    'program':'$applicationDetails.program',
+                    'intake':'$applicationDetails.intake',
+                }
+            },
+            {
+                $project:{
+                    'studentName':1,
+                    'assigneeName':1,
+                    'applicationId':1,
+                    'country':1,
+                    'university':1,
+                    'program':1,
+                    'intake':1,
+                    'stepNumber':1,
+                    'stepStatus':1,
+                }
+            }
+
+        ])
+
+        console.log("result", result)
+
+        res.status(200).json(result)
+
+    } catch (error) {
+        res.status(500).json({msg:"Something went wrong"})
+        
+    }
+}
+
+
+employeeCtrl.GetEmployeeTaskMetrics = async(req,res)=>{
+    const employeeId = req.params.id;
+    
+    if(!(typeof employeeId === 'string' || ObjectId.isValid(employeeId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+        }
+
+    try {
+        const employee = await Employee.findById(employeeId);
+        if(!employee) return res.status(404).json({msg:"Employee Not Found"});
+        
+        const allTasks = await Work.find({assignee:employee._id}).countDocuments();
+        const pendingTasks = await Work.find({assignee:employee._id, stepStatus:'pending'}).countDocuments();
+        const currentTasks = await Work.find({assignee:employee._id, stepStatus:'ongoing'}).countDocuments();
+        const completedTasks = await Work.find({assignee:employee._id, stepStatus:'completed'}).countDocuments();
+
+        const result = [
+            {name:"All", value:allTasks},
+            {name:"Pending", value:pendingTasks},
+            {name:"On-going", value:currentTasks},
+            {name:"Completed", value:completedTasks},
+        ]
+
+        res.status(200).json(result);
+
+    } catch (error) {
+        res.status(500).json({msg:"Something went wrong"})
+    }
+    
+
+   
+
+}
 
 module.exports = employeeCtrl;

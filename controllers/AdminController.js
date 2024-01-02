@@ -3,6 +3,7 @@ const Admin = require("../models/AdminModel");
 const mongoose = require("mongoose");
 const Application = require("../models/ApplicationModel");
 const Employee = require("../models/EmployeeModel");
+const Work = require("../models/WorkModel");
 const ObjectId = mongoose.Types.ObjectId;
 const adminCtrl = {};
 
@@ -173,7 +174,7 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
 // Assign work to an Employee; 
 // ** warning: same work can be assigned many times;
 adminCtrl.AssignWork = async(req,res)=>{
-    const {applicationId, employeeId} = req.body;
+    const {applicationId, employeeId, stepNumber} = req.body;
 
     if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
         return res.status(400).json({msg:"Invalid Id format"});
@@ -186,27 +187,85 @@ adminCtrl.AssignWork = async(req,res)=>{
         const employee = await Employee.findById(employeeId);
         if(!employee) return res.status(404).json({msg:"Employee not found"});
 
-        const prevAssignee = application.assignee;
+        // const prevAssignee = application.assignee;
 
-        if(prevAssignee){
-            await Employee.findByIdAndUpdate(prevAssignee,{
-                $pull:{currentApplications : application._id}
-            });
-        }
+        // if(prevAssignee){
+        //     await Employee.findByIdAndUpdate(prevAssignee,{
+        //         $pull:{currentApplications : application._id}
+        //     });
+        // }
 
         // ==> Update the assignee field of Application;
         await Application.findByIdAndUpdate(applicationId,{
             $set:{assignee: employee._id}
         })
+        //Update the assignee and status in that particular step
+        await Application.findOneAndUpdate({_id:applicationId, steps:{$elemMatch:{_id:stepNumber}}},
+            {$set:{'steps.$.assignee':employee._id,'steps.$.status':"pending"}}
+            )
+
+        const workObject = {
+            applicationId:application._id,
+            stepNumber,
+            status:"pending"
+        }
 
         // ==> Push applicationId to the currentApplications of employee;
         await Employee.findByIdAndUpdate(employeeId,{
-            $push:{currentApplications: application._id} 
+            $push:{currentApplications: workObject} 
         })
 
         res.status(200).json({msg:"Work Assigned"})
     }catch(error){
         res.status(500).json({msg:"Something went wrong"})
+    }
+}
+
+
+adminCtrl.WorkAssign = async(req,res)=>{
+    const {applicationId, employeeId, stepNumber} = req.body;
+
+    if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    };
+
+    if(!(typeof employeeId === 'string' || ObjectId.isValid(employeeId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    };
+
+    try {
+        const application = await Application.findById(applicationId);
+        if(!application) return res.status(404).json({msg:"Application not found"});
+
+        const employee = await Employee.findById(employeeId);
+        if(!employee) return res.status(404).json({msg:"Employee not found"});
+
+        //Update the assignee and status in that particular step
+        await Application.findOneAndUpdate({_id:applicationId, steps:{$elemMatch:{_id:stepNumber}}},
+            {$set:{'steps.$.assignee':employee._id,'steps.$.status':"pending"}}
+            );
+        
+        const newWork = new Work({
+            applicationId:application._id,
+            studentId:application.studentId,
+            assignee:employee._id,
+            stepNumber,
+            stepStatus:"pending"
+        })
+
+        console.log("newWork",newWork)
+
+        const savedWork = await newWork.save();
+
+        await Employee.findByIdAndUpdate(employeeId,{
+            $push:{currentWorks: savedWork._id} 
+        });
+
+
+        res.status(200).json({msg:"Work Assigned"})
+    } catch (error) {
+        res.status(500).json({msg:"Something went Wrong"})
+        
     }
 }
 

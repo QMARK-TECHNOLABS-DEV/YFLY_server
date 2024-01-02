@@ -23,6 +23,7 @@ const s3Client = new S3Client({
 
 const partneredData = require("../datas/partnered.json");
 const nonPartneredData = require("../datas/non-partnered.json");
+const Work = require("../models/WorkModel");
 
 //Create Application;
 
@@ -565,8 +566,38 @@ applicationCtrl.UpdateDocument = async(req,res)=>{
         console.log(error)
         res.status(500).json({msg:"Something went wrong"})
     }
+}
 
 
+applicationCtrl.ChangeStepStatus = async(req,res)=>{
+    const {applicationId,employeeId,
+          stepNumber,stepStatus} = req.body;
+
+    if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
+    return res.status(400).json({msg:"Invalid Id format"});
+    }
+    if(!(typeof employeeId === 'string' || ObjectId.isValid(employeeId))){
+    return res.status(400).json({msg:"Invalid Id format"});
+    }
+
+    try {
+        const application = await Application.findOneAndUpdate({_id:applicationId,
+            steps:{$elemMatch:{_id:stepNumber,assignee:employeeId}}},
+            {$set:{'steps.$.status':stepStatus}},
+            {new:true}
+            )
+        
+        await Work.findOneAndUpdate({applicationId:application._id,
+            assignee:new ObjectId(employeeId),stepNumber},
+            {$set:{stepStatus}}
+            );
+        
+        res.status(200).json({msg:"Status updated"})
+    } catch (error) {
+        res.status(500).json({msg:"Something went wrong"})
+    }
+
+    
 }
 
 module.exports = applicationCtrl;

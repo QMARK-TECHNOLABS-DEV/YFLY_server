@@ -8,8 +8,9 @@ router.get("/get/:id", authMiddleware,adminCheckMiddleware, adminCtrl.GetAdmin);
 router.put("/update", authMiddleware,adminCheckMiddleware, adminCtrl.UpdateAdmin);
 router.put("/change-password", authMiddleware,adminCheckMiddleware, adminCtrl.ChangePassword);
 router.get("/get-application-metrics", authMiddleware, adminCheckMiddleware, adminCtrl.GetApplicationMetrics);
-router.put("/assign-work", authMiddleware, adminCheckMiddleware, adminCtrl.AssignWork);
+// router.put("/assign-work", authMiddleware, adminCheckMiddleware, adminCtrl.AssignWork);
+router.put("/assign-work", authMiddleware, adminCheckMiddleware, adminCtrl.WorkAssign);
+
+
 router.put("/remove-assignee",authMiddleware, adminCheckMiddleware, adminCtrl.RemoveAssignee)
-
-
 module.exports = router;

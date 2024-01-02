@@ -12,6 +12,9 @@ router.put("/update", authMiddleware, adminCheckMiddleware, upload.single('image
 router.put("/change-password", authMiddleware, employeeCtrl.ChangePassword);
 router.put("/deactivate", authMiddleware, adminCheckMiddleware, employeeCtrl.DeactivateEmployee)
 
-router.get("/get-assigned-works/:id", authMiddleware, employeeCtrl.GetAssignedWorks)
+// router.get("/get-assigned-works/:id", authMiddleware, employeeCtrl.GetAssignedWorks)
+router.get("/get-assigned-works/:id", authMiddleware, employeeCtrl.RetrieveWorks)
+
+router.get("/get-task-metrics/:id", authMiddleware, employeeCtrl.GetEmployeeTaskMetrics)
 
 module.exports = router;
