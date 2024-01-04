@@ -53,9 +53,11 @@ authCtrl.Login = async (req, res) => {
     if(!passwordRegex.test(req.body.password)) return res.status(400).json({ msg: "Invalid password format" });
 
     try {
-        const admin = await Admin.findOne({ email }).lean();
-        const employee = await Employee.findOne({ email }).lean();
-        const student = await Student.findOne({ email }).lean();
+        const emailCaseRegex = new RegExp(email, 'i')
+
+        const admin = await Admin.findOne({email: emailCaseRegex }).lean();
+        const employee = await Employee.findOne({email: emailCaseRegex }).lean();
+        const student = await Student.findOne({email: emailCaseRegex }).lean();
 
         let user;
 
@@ -66,11 +68,11 @@ authCtrl.Login = async (req, res) => {
         } else if(student){
             user = student;
         } else{
-            return res.status(401).json({ msg: "Invalid email" })
+            return res.status(401).json({ msg: "Invalid email or password" })
         }
 
         const isValidPassword = await bcrypt.compare(req.body.password, user.password);
-        if (!isValidPassword) return res.status(401).json({ msg: "Invalid password" });
+        if (!isValidPassword) return res.status(401).json({ msg: "Invalid email or password" });
 
         const accessToken = generateAccessToken({ userId: user._id, role: user.role })
 
