@@ -65,13 +65,53 @@ studentCtrl.CreateStudent = async(req,res)=>{
 //Get All Students;
 
 studentCtrl.GetAllStudents = async(req,res)=>{
+    const name = req.query.name;
+    const email = req.query.email;
+    const qualification = req.query.qualification;
+
+    //search query;
+    const searchQuery = req.query.search;
+
+    // Paginators
+    const page = req.query.page;
+    const entries = req.query.entries;
+
+    const ORArray = [{name:{ $regex: new RegExp(searchQuery,"i")}},
+    {email:{ $regex: new RegExp(searchQuery,"i")}},
+    {qualification:{ $regex: new RegExp(searchQuery,"i")}}];
+
+    if(ObjectId.isValid(searchQuery)){
+        ORArray.push({_id:new ObjectId(searchQuery)}, {applicationId:new ObjectId(searchQuery)})
+    }
+
+    let filters = {
+        $or:[...ORArray],
+        name : {$regex: new RegExp(name, "i")},
+        email : {$regex: new RegExp(email, "i")},
+        qualification : {$regex: new RegExp(qualification, "i")},
+    }
+
+    console.log("filters",filters)
+
     try{
-        const allStudents = await Student.find({},{password:0});
+        const allStudents = await Student.find({...filters},{password:0});
         console.log(allStudents);
 
-        res.status(200).json(allStudents);
+        let result;
 
+        if(page){
+            if(entries){
+                result = allStudents.splice(((page-1)*entries),(page*entries))
+            }else{
+                result = allStudents.splice(((page-1)*10),(page*10))
+            }
+        }else{
+            result = allStudents;
+        }
+
+        res.status(200).json(result);
     }catch(error){
+        console.log(error)
         res.status(500).json({msg:"Something went wrong"});
     }
 }

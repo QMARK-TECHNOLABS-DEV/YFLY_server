@@ -69,13 +69,34 @@ employeeCtrl.CreateEmployee = async(req,res)=>{
 
 employeeCtrl.GetAllEmployees = async(req,res)=>{
     const department = req.query.department;
+    const name = req.query.name;
+    const email = req.query.email;
+    const searchQuery = req.query.search;
     console.log("department", department)
+
     // Paginators
     const page = req.query.page;
     const entries = req.query.entries;
+
+    const ORArray = [
+                        {name:{ $regex: new RegExp(searchQuery,"i")}},
+                        {email:{ $regex: new RegExp(searchQuery,"i")}},
+                        {department:{ $regex: new RegExp(searchQuery,"i")}}
+                    ];
+
+    if(ObjectId.isValid(searchQuery)){
+        ORArray.push({_id:new ObjectId(searchQuery)})
+    }
+
+    let filters = {
+        $or:[...ORArray],
+        name : {$regex: new RegExp(name, "i")},
+        email : {$regex: new RegExp(email, "i")},
+        department : {$regex: new RegExp(department, "i")},
+    }
     
     try {
-        const allEmployees = await Employee.find({isActive:true,department},{password: 0});
+        const allEmployees = await Employee.find({isActive:true,...filters},{password: 0});
         console.log("allEmployeess",allEmployees);
 
         let result

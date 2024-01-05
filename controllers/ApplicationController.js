@@ -111,11 +111,24 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
     const program = req.query.program;
     const studentName = req.query.student_name;
 
+    //search query;
+    const searchQuery = req.query.search;
+
     // Paginators
     const page = req.query.page;
     const entries = req.query.entries;
 
     let filters = {};
+    let searchFilter = {};
+
+    if(searchQuery){
+        searchFilter = {$or:[
+        {_id:(ObjectId.isValid(searchQuery) ? new ObjectId(searchQuery) : searchQuery)},
+        {university:{ $regex: new RegExp(searchQuery,"i")}},
+        {program:{ $regex: new RegExp(searchQuery,"i")}},
+        {intake:{ $regex: new RegExp(searchQuery,"i")}},
+        {country:{ $regex: new RegExp(searchQuery,"i")}},
+    ]}}
 
     if(country){filters.country = {$regex : new RegExp(country, 'i')}};
 
@@ -182,7 +195,7 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
                     },
                     {
                         $match: {
-                        ...filters,
+                        ...filters,...searchFilter,
                         "studentDetails.name": studentName ? { $regex: new RegExp(studentName, 'i') } : { $exists: true }
                         }
                     },
