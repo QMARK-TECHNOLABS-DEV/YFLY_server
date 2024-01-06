@@ -91,6 +91,24 @@ applicationCtrl.CreateApplication = async(req,res)=>{
             $set:{applicationId: application._id}
         })
 
+        if(assignee){
+            const newWork = new Work({
+                applicationId:application._id,
+                studentId:application.studentId,
+                assignee:new ObjectId(assignee),
+                stepNumber:1,
+                stepStatus:"pending"
+            })
+    
+            console.log("newWork",newWork)
+    
+            const savedWork = await newWork.save();
+    
+            await Employee.findByIdAndUpdate(assignee,{
+                $push:{currentWorks: savedWork._id} 
+            });
+        }
+
         res.status(200).json({msg:"New Application Created"})
     } catch (error) {
         console.log(error);
@@ -603,11 +621,23 @@ applicationCtrl.ChangeStepStatus = async(req,res)=>{
     }
 
     try {
-        const application = await Application.findOneAndUpdate({_id:applicationId,
+        const application = await Application.findById(applicationId);
+
+        let updateObj = {'steps.$.status':stepStatus};
+
+        if(stepNumber === 1){
+            updateObj = {'steps.$.status':stepStatus, status:"ongoing"}
+        }
+
+        if(stepNumber === application.steps.length  && stepStatus === "completed"){
+            updateObj = {'steps.$.status':stepStatus, status:"completed"}
+        }
+
+        await Application.findOneAndUpdate({_id:applicationId,
             steps:{$elemMatch:{_id:stepNumber,assignee:employeeId}}},
-            {$set:{'steps.$.status':stepStatus}},
+            {$set:updateObj},
             {new:true}
-            )
+            );
         
         await Work.findOneAndUpdate({applicationId:application._id,
             assignee:new ObjectId(employeeId),stepNumber},

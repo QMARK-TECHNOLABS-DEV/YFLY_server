@@ -140,7 +140,7 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
         const allApplications = await Application.find(filters).countDocuments();
         console.log("all", allApplications);
 
-        const currentApplications = await Application.find({...filters, status: "processing"}).countDocuments();
+        const currentApplications = await Application.find({...filters, status: "ongoing"}).countDocuments();
         console.log("processing", currentApplications);
 
         const completedApplications = await Application.find({...filters, status: "completed"}).countDocuments();

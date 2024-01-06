@@ -26,7 +26,7 @@ const ApplicationSchema = new mongoose.Schema({
          default:[]},
     status:{type:String,
             default:"pending",
-            enum:["pending", "processing", "completed", "enrolled", "cancelled", "deffered", "not-enrolled"]
+            enum:["pending", "ongoing", "completed", "enrolled", "cancelled", "deffered", "not-enrolled"]
            },
     assignee:{type:mongoose.Types.ObjectId},
     createdAt:{type:Date, default:Date.now},
