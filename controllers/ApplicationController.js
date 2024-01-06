@@ -285,8 +285,11 @@ applicationCtrl.GetApplication = async(req,res)=>{
         const student = await Student.findById(application.studentId);
         if(!student) return res.status(404).json({msg:"Student doesn't exist"});
 
-        const result = {...application,"studentName":student.name}
-        console.log("application with student name",result);
+        const assignee = await Employee.findById(application.assignee);
+
+        const result = {...application,"studentName":student.name, "assignee":assignee.name}
+        console.log("application with student and assignee name",result);
+
         res.status(200).json(result);
     }catch(error){
         res.status(500).json({msg:"Something went wrong"})
