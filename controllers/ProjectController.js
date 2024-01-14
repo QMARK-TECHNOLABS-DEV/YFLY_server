@@ -223,9 +223,20 @@ projectCtrl.GetATaskOfAProject = async(req,res)=>{
                         }
                     }
                 }
+            },
+            {
+                $lookup: {
+                    from: "comments", 
+                    localField: "tasks.comments",
+                    foreignField: "_id",
+                    as: "commentsDetails"
+                }
             }
+            
+            
         ]);
         
+
 
         const result = projectArray[0]
 

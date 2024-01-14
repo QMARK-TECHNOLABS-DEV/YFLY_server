@@ -481,6 +481,14 @@ employeeCtrl.GetMyProjectTasks = async(req,res)=>{
                 }
             },
             {
+                $lookup: {
+                    from: "comments", 
+                    localField: "tasks.comments",
+                    foreignField: "_id",
+                    as: "commentsDetails"
+                }
+            },
+            {
                 $sort:{_id:1}
             }
 

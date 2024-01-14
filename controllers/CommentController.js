@@ -84,7 +84,7 @@ commentCtrl.GetComments = async(req,res)=>{
 // Add comment;
 
 commentCtrl.AddComment = async(req,res)=>{
-    const {resourceId,resourceType,
+    const {resourceId,resourceType,taskId,
         commentorId,comment} = req.body;
     
     const fromAdmin = req.user.role === "admin";
@@ -106,6 +106,11 @@ commentCtrl.AddComment = async(req,res)=>{
     };
 
     try {
+        if(!fromAdmin){
+            const commentorExists = await Employee.findById(commentorId);
+            if(!commentorExists) return res.status(404).json({msg:"Commentor doesn't exist"})
+        }
+
         if(resourceType === "application"){
             const applicationExists = await Application.findById(resourceId);
 
@@ -121,11 +126,6 @@ commentCtrl.AddComment = async(req,res)=>{
             }
         }
 
-        if(!fromAdmin){
-            const commentorExists = await Employee.findById(commentorId);
-            if(!commentorExists) return res.status(404).json({msg:"Commentor doesn't exist"})
-
-        }
 
         const newComment = new Comment({
             resourceId: new ObjectId(resourceId),
@@ -137,6 +137,12 @@ commentCtrl.AddComment = async(req,res)=>{
 
         const savedComment = await newComment.save();
         console.log(savedComment);
+
+        if(resourceType === "project"){
+            await Project.updateOne({_id:new ObjectId(resourceId), "tasks._id": new ObjectId(taskId)},
+                {$push:{"tasks.$.comments":savedComment._id}}
+            )
+        }
 
         res.status(200).json({data:savedComment, msg:"Comment Added"});
 

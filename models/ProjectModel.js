@@ -10,6 +10,7 @@ const ProjectSchema = new mongoose.Schema({
                         assignee:{type:mongoose.Types.ObjectId},
                         taskName:{type:String},
                         taskStatus:{type:String, default:"pending"},
+                        comments:{type:Array, default:[]}
                     }
                 ],
             default:[]
