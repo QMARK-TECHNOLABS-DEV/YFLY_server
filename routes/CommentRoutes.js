@@ -4,7 +4,7 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const commentCtrl = require("../controllers/CommentController");
 const employeeChecker = require("../middlewares/employeeChecker");
 
-router.get("/get-all/:id", authMiddleware, employeeChecker, commentCtrl.GetComments)
+router.get("/get-all/:type/:id", authMiddleware, employeeChecker, commentCtrl.GetComments)
 router.post("/add", authMiddleware, employeeChecker, commentCtrl.AddComment)
 
 

@@ -358,7 +358,7 @@ applicationCtrl.DeleteApplication = async(req,res)=>{
                 $pull:{currentApplications : application._id}
             });
 
-            await Comment.deleteMany({applicationId});
+            await Comment.deleteMany({resourceId:applicationId});
         })
         .catch((error)=>{
             console.log(error)
