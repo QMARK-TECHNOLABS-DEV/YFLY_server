@@ -5,6 +5,7 @@ const CommentSchema = new mongoose.Schema({
     resourceType:{type:String,required:true},
     commentorId:{type:mongoose.Types.ObjectId,required:true},
     comment:{type:String},
+    fromAdmin:{type:Boolean},
     createdAt:{type:Date, default: Date.now},
 });
 

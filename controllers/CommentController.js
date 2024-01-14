@@ -21,38 +21,57 @@ commentCtrl.GetComments = async(req,res)=>{
     }
 
     try {
+
         const comments = await Comment.aggregate([
             {
-                $match:{
+                $match: {
                     resourceId: new ObjectId(resourceId),
                     resourceType
                 }
             },
             {
-                $lookup:{
-                    from:"employees",
-                    localField:"commentorId",
-                    foreignField:"_id",
-                    as:"commentorDetails"
+                $lookup: {
+                    from: "admins",
+                    localField: "commentorId",
+                    foreignField: "_id",
+                    as: "adminCommentor"
                 }
             },
             {
-                $unwind:"$commentorDetails"
+                $lookup: {
+                    from: "employees",
+                    localField: "commentorId",
+                    foreignField: "_id",
+                    as: "employeeCommentor"
+                }
             },
             {
-                $project:{
-                    "resourceId":1,
-                    "resourceType":1,
-                    "commentorDetails.name":1,
-                    "comment":1,
-                    "createdAt":1
+                $addFields: {
+                    "commentor": {
+                        $cond: {
+                            if: "$fromAdmin",
+                            then: "Admin",
+                            else: { $arrayElemAt: ["$employeeCommentor.name", 0] }
+                        }
+                    }
                 }
-            },{
-                $sort:{
-                    "_id":-1
+            },
+            {
+                $project: {
+                    "resourceId": 1,
+                    "resourceType": 1,
+                    "commentor": 1,
+                    "comment": 1,
+                    "createdAt": 1
+                }
+            },
+            {
+                $sort: {
+                    "_id": -1
                 }
             }
-        ])
+        ]);
+        
 
         console.log("comments",comments);
 
@@ -67,6 +86,8 @@ commentCtrl.GetComments = async(req,res)=>{
 commentCtrl.AddComment = async(req,res)=>{
     const {resourceId,resourceType,
         commentorId,comment} = req.body;
+    
+    const fromAdmin = req.user.role === "admin";
 
     if(!(typeof resourceId === 'string' || ObjectId.isValid(resourceId))){
         return res.status(400).json({msg:"Invalid Id format"});
@@ -100,16 +121,18 @@ commentCtrl.AddComment = async(req,res)=>{
             }
         }
 
+        if(!fromAdmin){
+            const commentorExists = await Employee.findById(commentorId);
+            if(!commentorExists) return res.status(404).json({msg:"Commentor doesn't exist"})
 
-        const commentorExists = await Employee.findById(commentorId);
-        if(!commentorExists) return res.status(404).json({msg:"Commentor doesn't exist"})
-
+        }
 
         const newComment = new Comment({
             resourceId: new ObjectId(resourceId),
             resourceType,
             commentorId: new ObjectId(commentorId),
             comment:comment.trim(),
+            fromAdmin
         });
 
         const savedComment = await newComment.save();

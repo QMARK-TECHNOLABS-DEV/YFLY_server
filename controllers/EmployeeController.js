@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const Application = require("../models/ApplicationModel");
 const Work = require("../models/WorkModel");
+const Project = require("../models/ProjectModel");
 const ObjectId = mongoose.Types.ObjectId;
 
 const employeeCtrl = {};
@@ -277,61 +278,61 @@ employeeCtrl.DeactivateEmployee = async(req,res)=>{
 
 //Get Assigned Works for an Employee;
 
-employeeCtrl.GetAssignedWorks = async(req,res)=>{
-    const employeeId = req.params.id;
+// employeeCtrl.GetAssignedWorks = async(req,res)=>{
+//     const employeeId = req.params.id;
 
-    if(!employeeId) return res.status(400).json({msg:"Invalid Employee Id"});
+//     if(!employeeId) return res.status(400).json({msg:"Invalid Employee Id"});
 
-    try {
-        const employee = await Employee.findById(employeeId);
-        if(!employee) return res.status(404).json({msg:"Employee Not Found"});
+//     try {
+//         const employee = await Employee.findById(employeeId);
+//         if(!employee) return res.status(404).json({msg:"Employee Not Found"});
 
-        const currentApplications = employee.currentApplications;
+//         const currentApplications = employee.currentApplications;
 
-        const works = await Application.aggregate([
-            {
-                $lookup:{
-                    from:"students",
-                    localField:"studentId",
-                    foreignField:"_id",
-                    as:"studentDetails"
-                }
-            },
-            {
-                $unwind:"$studentDetails"
-            },
-            {
-                $match:{
-                    _id : {$in:[...currentApplications]}
-                }
-            },
-            {
-                $project:{
-                    _id:1,
-                    "university":1,
-                    "country":1,
-                    "program":1,
-                    "intake":1,
-                    "status":1,
-                    "studentDetails._id":1,
-                    "studentDetails.name":1,
-                    "studentDetails.email":1,
-                    "studentDetails.phone":1,
-                    "studentDetails.age":1,
-                    "studentDetails.address":1,
-                    "studentDetails.image":1,
-                }
-            }
-        ]);
+//         const works = await Application.aggregate([
+//             {
+//                 $lookup:{
+//                     from:"students",
+//                     localField:"studentId",
+//                     foreignField:"_id",
+//                     as:"studentDetails"
+//                 }
+//             },
+//             {
+//                 $unwind:"$studentDetails"
+//             },
+//             {
+//                 $match:{
+//                     _id : {$in:[...currentApplications]}
+//                 }
+//             },
+//             {
+//                 $project:{
+//                     _id:1,
+//                     "university":1,
+//                     "country":1,
+//                     "program":1,
+//                     "intake":1,
+//                     "status":1,
+//                     "studentDetails._id":1,
+//                     "studentDetails.name":1,
+//                     "studentDetails.email":1,
+//                     "studentDetails.phone":1,
+//                     "studentDetails.age":1,
+//                     "studentDetails.address":1,
+//                     "studentDetails.image":1,
+//                 }
+//             }
+//         ]);
 
-        console.log("works",works);
+//         console.log("works",works);
 
-        res.status(200).json(works)
-    } catch (error) {
-        res.status(500).json({msg:"Something went wrong"})
-    }
+//         res.status(200).json(works)
+//     } catch (error) {
+//         res.status(500).json({msg:"Something went wrong"})
+//     }
 
-}
+// }
 
 
 employeeCtrl.RetrieveWorks = async(req,res)=>{
@@ -447,10 +448,49 @@ employeeCtrl.GetEmployeeTaskMetrics = async(req,res)=>{
     } catch (error) {
         res.status(500).json({msg:"Something went wrong"})
     }
-    
 
-   
+}
 
+employeeCtrl.GetMyProjectTasks = async(req,res)=>{
+    const employeeId = req.params.id;
+
+    if(!employeeId) return res.status(400).json({msg:"Invalid Employee Id"});
+
+    try {
+        const employee = await Employee.findById(employeeId);
+        if(!employee) return res.status(404).json({msg:"Employee Not Found"});
+
+        const currentProjects = employee.currentProjects;
+
+        const result = await Project.aggregate([
+            {$match:{_id:{$in:[...currentProjects]}}},
+            {
+                $unwind:"$tasks"
+            },
+            {
+                $match:{"tasks.assignee":new ObjectId(employeeId)}
+            },
+            {
+                $group: {
+                    _id: "$_id",
+                    name: { $first: "$name" },
+                    status: { $first: "$status" },
+                    startDate: { $first: "$startDate" },
+                    endDate: { $first: "$endDate" },
+                    tasks: { $push: "$tasks" }
+                }
+            },
+            {
+                $sort:{_id:1}
+            }
+
+        ])
+
+        res.status(200).json(result)
+
+    }catch(error){
+        res.status(500).json({msg:"Something went wrong"})
+    }
 }
 
 module.exports = employeeCtrl;

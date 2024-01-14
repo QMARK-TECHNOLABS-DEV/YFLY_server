@@ -18,4 +18,7 @@ router.get("/get-assigned-works/:id", authMiddleware, employeeChecker, employeeC
 
 router.get("/get-task-metrics/:id", authMiddleware, employeeChecker, employeeCtrl.GetEmployeeTaskMetrics)
 
+router.get("/get-assigned-projects/:id", authMiddleware, employeeChecker, employeeCtrl.GetMyProjectTasks)
+
+
 module.exports = router;

@@ -164,10 +164,81 @@ projectCtrl.GetProject = async(req,res)=>{
 
 }
 
+// Get a task of a project
+projectCtrl.GetATaskOfAProject = async(req,res)=>{
+    const projectId = req.params.id;
+    const taskId = req.params.taskid;
+
+    if(!(typeof projectId === 'string' || ObjectId.isValid(projectId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
+
+    try {
+
+        const projectArray = await Project.aggregate([
+            {
+                $match: { _id: new ObjectId(projectId) }
+            },
+            {
+                $unwind: "$tasks"
+            },
+            {
+                $lookup: {
+                    from: "employees",
+                    localField: "tasks.assignee",
+                    foreignField: "_id",
+                    as: "assigneeDetails"
+                }
+            },
+            {
+                $unwind: "$assigneeDetails"
+            },
+            {
+                $set: {
+                    'tasks.assigneeName': "$assigneeDetails.name"
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id",
+                    name: { $first: "$name" },
+                    status: { $first: "$status" },
+                    startDate: { $first: "$startDate" },
+                    endDate: { $first: "$endDate" },
+                    tasks: { $push: "$tasks" }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    status: 1,
+                    startDate: 1,
+                    endDate: 1,
+                    tasks: {
+                        $filter: {
+                            input: "$tasks",
+                            as: "task",
+                            cond: { $eq: ["$$task._id", new ObjectId(taskId)] }
+                        }
+                    }
+                }
+            }
+        ]);
+        
+
+        const result = projectArray[0]
+
+        res.status(200).json(result)
+    } catch (error) {
+        res.status(500).json({msg:"Something went wrong"})
+    }
+
+}
 
 // Update Status;
 projectCtrl.UpdateStatus = async(req,res)=>{
-    const {projectId, assignee, status }= req.body;
+    const {projectId, taskId, status } = req.body;
 
     if(!(typeof projectId === 'string' || ObjectId.isValid(projectId))){
         return res.status(400).json({msg:"Invalid Id format"});
@@ -179,7 +250,7 @@ projectCtrl.UpdateStatus = async(req,res)=>{
         if(!project) return res.status(404).json({msg:"Project doesn't exist"})
 
         let updatedDoc = await Project.findOneAndUpdate({_id: new ObjectId(projectId), 
-            'tasks':{$elemMatch:{assignee: new ObjectId(assignee)}}},
+            'tasks':{$elemMatch:{_id: new ObjectId(taskId)}}},
             {$set:{'tasks.$.taskStatus':status}}, {new:true}
             );
 
@@ -189,7 +260,7 @@ projectCtrl.UpdateStatus = async(req,res)=>{
         
         if(isOngoing){
             updatedDoc = await Project.findByIdAndUpdate(projectId,
-                {$set:{status:"ongoing"}}
+                {$set:{status:"ongoing"}}, {new:true}
                 )
         }else{
             let isCompleted = updatedDoc.tasks.every((task)=>{
@@ -198,10 +269,36 @@ projectCtrl.UpdateStatus = async(req,res)=>{
             
             if(isCompleted){
                 updatedDoc = await Project.findByIdAndUpdate(projectId,
-                    {$set:{status:"completed"}}
+                    {$set:{status:"completed"}}, {new:true}
                     )
             };
 
+        }
+
+        //If Status eq completed Remove the project id from employee's currentProjects array
+        // else if status eq pending add the project id to employee's currentProjects cause it is Rework from admin
+        const docWithSingleTask = await Project.findOne({_id:new ObjectId(projectId), "tasks._id":taskId},
+        {"tasks.$":1}
+        );
+
+        console.log(docWithSingleTask)
+
+        const employeeId = docWithSingleTask.tasks[0].assignee;
+        const employee = await Employee.findById(employeeId)
+
+        if(status === "completed"){
+            await Employee.findByIdAndUpdate(employeeId,{
+                $pull:{currentProjects:projectId}
+            })
+        }
+        else if(status === "pending"){
+            const idAlreadyExists = employee.currentProjects.includes(projectId);
+
+            if(!idAlreadyExists){
+                await Employee.findByIdAndUpdate(employeeId,{
+                    $push:{currentProjects:projectId}
+                })
+            }
         }
      
         console.log(updatedDoc)   

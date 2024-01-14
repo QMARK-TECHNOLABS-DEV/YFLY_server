@@ -7,6 +7,7 @@ const employeeChecker = require("../middlewares/employeeChecker");
 router.post("/create",authMiddleware,adminCheckMiddleware, projectCtrl.CreateProject)
 router.get("/get-all",authMiddleware,adminCheckMiddleware, projectCtrl.GetAllProjects)
 router.get("/get/:id",authMiddleware, employeeChecker, projectCtrl.GetProject)
+router.get("/get-task/:id/:taskid",authMiddleware, employeeChecker, projectCtrl.GetATaskOfAProject)
 router.put("/update-status",authMiddleware, employeeChecker, projectCtrl.UpdateStatus)
 router.delete("/delete/:id",authMiddleware,adminCheckMiddleware, projectCtrl.DeleteProject)
 
