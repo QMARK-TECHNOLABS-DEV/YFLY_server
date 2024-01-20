@@ -16,6 +16,7 @@ const StudentSchema = new mongoose.Schema({
     role: {type:String, default:"student", required:true},
     image:{type:String},
     applicationId:{type:mongoose.Types.ObjectId},
+    office:{type:String}
 })
 
 const Student = mongoose.model("Student", StudentSchema);

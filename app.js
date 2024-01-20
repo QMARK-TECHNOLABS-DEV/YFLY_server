@@ -12,6 +12,7 @@ const studentRouter = require("./routes/StudentRoutes");
 const applicationRouter = require("./routes/ApplicationRoutes");
 const commentRouter = require("./routes/CommentRoutes");
 const projectRouter = require("./routes/ProjectRoutes");
+const stepperRouter = require("./routes/StepperRoutes");
 
 const PORT = process.env.PORT || 8800;
 const ClientURL = process.env.ClientURL;
@@ -33,6 +34,7 @@ app.use("/api/student", studentRouter);
 app.use("/api/application", applicationRouter);
 app.use("/api/comment", commentRouter);
 app.use("/api/project", projectRouter);
+app.use("/api/stepper",stepperRouter)
 
 app.use("*", (req, res) => {
     res.sendStatus(404);

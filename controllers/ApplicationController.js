@@ -24,12 +24,13 @@ const s3Client = new S3Client({
 const partneredData = require("../datas/partnered.json");
 const nonPartneredData = require("../datas/non-partnered.json");
 const Work = require("../models/WorkModel");
+const Stepper = require("../models/StepperModel");
 
 //Create Application;
 
 applicationCtrl.CreateApplication = async(req,res)=>{
-    const {studentId,university,program,
-        intake,country,creator,assignee,partnership} = req.body;
+    const {studentId,uniBased,program,
+        intake,country,creator,assignee} = req.body;
     
     console.log("reqBody",req.body);
 
@@ -37,41 +38,22 @@ applicationCtrl.CreateApplication = async(req,res)=>{
         return res.status(400).json({msg:"Invalid Id format"});
     }
 
-    let steps = [];
-    if(partnership === "partnered"){
-        steps = partneredData.filter((step)=>{
-            return (step.country === "common" || step.country === country)
-        })
-    }
-    else if(partnership === "non-partnered"){
-        steps = [...nonPartneredData]
-    }
+    // uniBased = [{university,partnership}] 
+
+    let steppers = [];
+
 
     let schemaObject = {
         studentId : new ObjectId(studentId),
-        university,program,
-        intake,country,
+        program,
+        intake,
+        country,
         creator : new ObjectId(creator),
-        steps
+        steppers
     }
-    
-    if((typeof assignee==="string" || ObjectId.isValid(assignee))){
-       steps = steps.map((step)=>{
-                if(step._id === 1){
-                    return {...step, status:"pending", assignee : new ObjectId(assignee)}
-                }
 
-                return step
-               });
-
-       schemaObject = {
-            studentId : new ObjectId(studentId),
-            university,program,
-            intake,country,
-            creator : new ObjectId(creator),
-            steps,
-            assignee: new ObjectId(assignee)
-        }   
+    if(assignee){
+       schemaObject.assignee= new ObjectId(assignee)
     }
 
     try {
@@ -87,27 +69,67 @@ applicationCtrl.CreateApplication = async(req,res)=>{
         const application = await newDocument.save();
         console.log("application",application);
 
-        await Student.findByIdAndUpdate(studentId,{
-            $set:{applicationId: application._id}
+        // Creating parallel steps according to the universities;
+        for(const obj of uniBased){
+            let currentSteps = [];
+    
+            if(obj.partnership === "partnered"){
+                currentSteps = partneredData.filter((step)=>{
+                    return (step.country === "common" || step.country === country)
+                })
+            }
+            else if(obj.partnership === "non-partnered"){
+                currentSteps = [...nonPartneredData]
+            }
+    
+            if(assignee){
+                currentSteps = currentSteps.map((step)=>{
+                         if(step._id === 1){
+                             return {...step, status:"pending", assignee : new ObjectId(assignee)}
+                         }
+         
+                         return step
+                        });
+             }
+    
+            const newStepper = new Stepper({
+                applicationId:application._id,
+                university: obj.university,
+                steps: currentSteps
+            });
+    
+            const savedStepper = await newStepper.save();
+    
+            steppers.push(savedStepper._id)
+
+            if(assignee){
+                const newWork = new Work({
+                    applicationId: application._id,
+                    stepperId: savedStepper._id,
+                    studentId: application.studentId,
+                    assignee: new ObjectId(assignee),
+                    stepNumber: 1,
+                    stepStatus: "pending"
+                })
+        
+                console.log("newWork",newWork)
+        
+                const savedWork = await newWork.save();
+        
+                await Employee.findByIdAndUpdate(assignee,{
+                    $push:{currentWorks: savedWork._id} 
+                });
+            }
+    
+        }
+
+        await Application.findByIdAndUpdate(application._id,{
+            $set:{steppers:steppers}
         })
 
-        if(assignee){
-            const newWork = new Work({
-                applicationId:application._id,
-                studentId:application.studentId,
-                assignee:new ObjectId(assignee),
-                stepNumber:1,
-                stepStatus:"pending"
-            })
-    
-            console.log("newWork",newWork)
-    
-            const savedWork = await newWork.save();
-    
-            await Employee.findByIdAndUpdate(assignee,{
-                $push:{currentWorks: savedWork._id} 
-            });
-        }
+        await Student.findByIdAndUpdate(studentId,{
+            $set:{applicationId: application._id}
+        })    
 
         res.status(200).json({msg:"New Application Created"})
     } catch (error) {
@@ -115,6 +137,7 @@ applicationCtrl.CreateApplication = async(req,res)=>{
         res.status(500).json({msg:"Something went wrong"})
     }
 }
+
 
 //Get All Applications;
 applicationCtrl.GetAllApplications = async(req,res)=>{
@@ -124,7 +147,6 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
     const createdDateQuery = req.query.created_date;
     const year = req.query.year;
     const status = req.query.status;
-    const university = req.query.university;
     const ackNmbr = req.query.ack_nmbr;
     const program = req.query.program;
     const studentName = req.query.student_name;
@@ -163,8 +185,6 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
     };
 
     if(status){filters.status = {$regex : new RegExp(status, 'i')}};
-
-    if(university){filters.university = {$regex : new RegExp(university, 'i')}};
 
     if(ackNmbr){filters._id = new ObjectId(ackNmbr)};
 
@@ -229,11 +249,10 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
                         $project: {
                             "_id": 1,
                             "studentId": 1,
-                            "university": 1,
                             "intake": 1,
                             "country": 1,
                             "creator": 1,
-                            "steps": 1,
+                            "steppers": 1,
                             "documents": 1,
                             "status":1,
                             "createdAt": 1,
@@ -271,34 +290,125 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
 }
 
 //Get an Application;
-applicationCtrl.GetApplication = async(req,res)=>{
+
+applicationCtrl.GetApplication = async (req, res) => {
     const applicationId = req.params.id;
 
-    if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    try{
-        let application = await Application.findById(applicationId).lean();
-        if(!application) return res.status(404).json({msg:"Application doesn't exist"});
+    try {
+        const result = await Application.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(applicationId)
+                }
+            },
+            {
+                $lookup: {
+                    from: "students",
+                    localField: "studentId",
+                    foreignField: "_id",
+                    as: "student"
+                }
+            },
+            {
+                $lookup: {
+                    from: "employees",
+                    localField: "assignee",
+                    foreignField: "_id",
+                    as: "assignee"
+                }
+            },
+            {
+                $lookup: {
+                    from: "steppers",
+                    localField: "_id",
+                    foreignField: "applicationId",
+                    as: "steppers"
+                }
+            },
+            {
+                $unwind: "$student"
+            },
+            {
+                $unwind: "$assignee"
+            },
+            {
+                $project: {
+                    _id: 1,
+                    studentId:1,
+                    program:1,
+                    intake:1,
+                    country:1,
+                    creator:1,
+                    status:1,
+                    assignee:1,
+                    documents:1,
+                    createdAt:1,
+                    updatedAt:1,
+                    studentName: "$student.name",
+                    assignee: "$assignee.name",
+                    steppers: 1
+                }
+            }
+        ]);
 
-        const student = await Student.findById(application.studentId);
-        if(!student) return res.status(404).json({msg:"Student doesn't exist"});
+        if (!result.length) return res.status(404).json({ msg: "Application doesn't exist" });
 
-        const assignee = await Employee.findById(application.assignee);
-
-        const result = {...application,"studentName":student.name, "assignee":assignee.name}
-        console.log("application with student and assignee name",result);
-
-        res.status(200).json(result);
-    }catch(error){
-        res.status(500).json({msg:"Something went wrong"})
+        res.status(200).json(result[0]);
+    } catch (error) {
+        res.status(500).json({ msg: "Something went wrong" });
     }
-}
+};
 
 //Update Application;
+// applicationCtrl.UpdateApplication = async (req,res)=>{
+//     const {applicationId, stepNumber, stepStatus, stepAssignee, ...updates} = req.body;
+//     console.log(req.body);
+
+//     if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
+//         return res.status(400).json({msg:"Invalid Id format"});
+//     }
+    
+//     try {
+//         const application = await Application.findById(applicationId);
+//         console.log(application);
+//         if(!application) return res.status(404).json({msg:"Application not found"});
+        
+//         if(stepNumber){
+//             if(stepStatus){
+//                 await Application.findOneAndUpdate({_id:applicationId, 'steppers':{$elemMatch:{_id:stepNumber}}},
+//                 {$set:{'steppers.$.status':stepStatus}},{new:true}
+//                 )
+//             }
+    
+//             if(stepAssignee){
+//                 await Application.findOneAndUpdate({_id:applicationId, 'steppers':{$elemMatch:{_id:stepNumber}}},
+//                 {$set:{'steppers.$.assignee':stepAssignee}},{new:true}
+//                 )
+    
+//                 updates.assignee = stepAssignee;
+//             }
+//         }
+
+//         const updatedApplication = await Application.findByIdAndUpdate(applicationId,
+//             {$set: {...updates, updatedAt:Date.now()}},
+//             {new:true});
+
+//         console.log(updatedApplication);
+
+//         res.status(200).json({msg:"Application Updated"})
+        
+//     } catch (error) {
+//         res.status(500).json({msg:"Something went wrong"})
+//     }
+
+// }
+
 applicationCtrl.UpdateApplication = async (req,res)=>{
-    const {applicationId, stepNumber, stepStatus, stepAssignee, ...updates} = req.body;
+    const {applicationId, ...updates} = req.body;
     console.log(req.body);
 
     if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
@@ -310,22 +420,6 @@ applicationCtrl.UpdateApplication = async (req,res)=>{
         console.log(application);
         if(!application) return res.status(404).json({msg:"Application not found"});
         
-        if(stepNumber){
-            if(stepStatus){
-                await Application.findOneAndUpdate({_id:applicationId, 'steps':{$elemMatch:{_id:stepNumber}}},
-                {$set:{'steps.$.status':stepStatus}},{new:true}
-                )
-            }
-    
-            if(stepAssignee){
-                await Application.findOneAndUpdate({_id:applicationId, 'steps':{$elemMatch:{_id:stepNumber}}},
-                {$set:{'steps.$.assignee':stepAssignee}},{new:true}
-                )
-    
-                updates.assignee = stepAssignee;
-            }
-        }
-
         const updatedApplication = await Application.findByIdAndUpdate(applicationId,
             {$set: {...updates, updatedAt:Date.now()}},
             {new:true});
@@ -354,11 +448,18 @@ applicationCtrl.DeleteApplication = async(req,res)=>{
 
         await Application.findByIdAndDelete(applicationId)
         .then(async()=>{
-            await Employee.findByIdAndUpdate(application.assignee,{
-                $pull:{currentApplications : application._id}
-            });
+            
+            await Comment.deleteMany({resourceId:application._id});
+            
+            await Stepper.deleteMany({applicationId:application._id});
 
-            await Comment.deleteMany({resourceId:applicationId});
+            const relatedWorks = await Work.find({applicationId:application._id});
+
+            const idsOfworks = relatedWorks.map((work)=> work._id)
+
+            await Employee.findByIdAndUpdate(application.assignee,{
+                $pull:{currentWorks : {$in: idsOfworks}}
+            });
         })
         .catch((error)=>{
             console.log(error)
@@ -611,48 +712,5 @@ applicationCtrl.UpdateDocument = async(req,res)=>{
     }
 }
 
-
-applicationCtrl.ChangeStepStatus = async(req,res)=>{
-    const {applicationId,employeeId,
-          stepNumber,stepStatus} = req.body;
-
-    if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
-    return res.status(400).json({msg:"Invalid Id format"});
-    }
-    if(!(typeof employeeId === 'string' || ObjectId.isValid(employeeId))){
-    return res.status(400).json({msg:"Invalid Id format"});
-    }
-
-    try {
-        const application = await Application.findById(applicationId);
-
-        let updateObj = {'steps.$.status':stepStatus};
-
-        if(stepNumber === 1){
-            updateObj = {'steps.$.status':stepStatus, status:"ongoing"}
-        }
-
-        if(stepNumber === application.steps.length  && stepStatus === "completed"){
-            updateObj = {'steps.$.status':stepStatus, status:"completed"}
-        }
-
-        await Application.findOneAndUpdate({_id:applicationId,
-            steps:{$elemMatch:{_id:stepNumber,assignee:employeeId}}},
-            {$set:updateObj},
-            {new:true}
-            );
-        
-        await Work.findOneAndUpdate({applicationId:application._id,
-            assignee:new ObjectId(employeeId),stepNumber},
-            {$set:{stepStatus}}
-            );
-        
-        res.status(200).json({msg:"Status updated"})
-    } catch (error) {
-        res.status(500).json({msg:"Something went wrong"})
-    }
-
-    
-}
 
 module.exports = applicationCtrl;

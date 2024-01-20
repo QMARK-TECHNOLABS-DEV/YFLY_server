@@ -140,8 +140,8 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
         const allApplications = await Application.find(filters).countDocuments();
         console.log("all", allApplications);
 
-        const currentApplications = await Application.find({...filters, status: "ongoing"}).countDocuments();
-        console.log("processing", currentApplications);
+        const ongoingApplications = await Application.find({...filters, status: "ongoing"}).countDocuments();
+        console.log("processing", ongoingApplications);
 
         const completedApplications = await Application.find({...filters, status: "completed"}).countDocuments();
         console.log("completed", completedApplications);
@@ -158,7 +158,7 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
 
         res.status(200).json([
             {name: "All",value:allApplications}, 
-            {name:"Current",value:currentApplications},
+            {name:"Current",value:ongoingApplications},
             {name:"Completed",value:completedApplications},
             {name:"Deffered",value:defferredApplications},
             {name:"Cancelled",value:cancelledApplications},
@@ -173,57 +173,9 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
 
 // Assign work to an Employee; 
 // ** warning: same work can be assigned many times;
-adminCtrl.AssignWork = async(req,res)=>{
-    const {applicationId, employeeId, stepNumber} = req.body;
-
-    if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
-        return res.status(400).json({msg:"Invalid Id format"});
-    };
-
-    try{
-        const application = await Application.findById(applicationId);
-        if(!application) return res.status(404).json({msg:"Application not found"});
-
-        const employee = await Employee.findById(employeeId);
-        if(!employee) return res.status(404).json({msg:"Employee not found"});
-
-        // const prevAssignee = application.assignee;
-
-        // if(prevAssignee){
-        //     await Employee.findByIdAndUpdate(prevAssignee,{
-        //         $pull:{currentApplications : application._id}
-        //     });
-        // }
-
-        // ==> Update the assignee field of Application;
-        await Application.findByIdAndUpdate(applicationId,{
-            $set:{assignee: employee._id}
-        })
-        //Update the assignee and status in that particular step
-        await Application.findOneAndUpdate({_id:applicationId, steps:{$elemMatch:{_id:stepNumber}}},
-            {$set:{'steps.$.assignee':employee._id,'steps.$.status':"pending"}}
-            )
-
-        const workObject = {
-            applicationId:application._id,
-            stepNumber,
-            status:"pending"
-        }
-
-        // ==> Push applicationId to the currentApplications of employee;
-        await Employee.findByIdAndUpdate(employeeId,{
-            $push:{currentApplications: workObject} 
-        })
-
-        res.status(200).json({msg:"Work Assigned"})
-    }catch(error){
-        res.status(500).json({msg:"Something went wrong"})
-    }
-}
-
 
 adminCtrl.WorkAssign = async(req,res)=>{
-    const {applicationId, employeeId, stepNumber} = req.body;
+    const {applicationId, employeeId,stepperId, stepNumber} = req.body;
 
     if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
         return res.status(400).json({msg:"Invalid Id format"});
@@ -241,12 +193,13 @@ adminCtrl.WorkAssign = async(req,res)=>{
         if(!employee) return res.status(404).json({msg:"Employee not found"});
 
         //Update the assignee and status in that particular step
-        await Application.findOneAndUpdate({_id:applicationId, steps:{$elemMatch:{_id:stepNumber}}},
-            {$set:{'steps.$.assignee':employee._id,'steps.$.status':"pending"}}
+        await Application.findOneAndUpdate({_id:applicationId, steppers:{$elemMatch:{_id:stepNumber}}},
+            {$set:{'steppers.$.assignee':employee._id,'steppers.$.status':"pending"}}
             );
         
         const newWork = new Work({
             applicationId:application._id,
+            stepperId: new ObjectId(stepperId),
             studentId:application.studentId,
             assignee:employee._id,
             stepNumber,
@@ -270,34 +223,6 @@ adminCtrl.WorkAssign = async(req,res)=>{
 }
 
 
-// Remove Assignee from a work;
-adminCtrl.RemoveAssignee = async(req,res)=>{
-    const {applicationId} = req.body;
-    if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
-        return res.status(400).json({msg:"Invalid Id format"});
-    };
-
-    try {
-        const application = await Application.findById(applicationId);
-        if(!application) return res.status(404).json({msg:"Application not found"});
-        if(!application.assignee) return res.status(400).json({msg:"No Assignee to remove"})
-
-        const assignee = await Employee.findById(application.assignee);
-        if(!assignee) return res.status(404).json({msg:"assignee not found"});
-
-        await Employee.findByIdAndUpdate(assignee,{
-            $pull:{ currentApplications: application._id}
-        });
-
-        await Application.findByIdAndUpdate(applicationId,{
-            $unset:{assignee:""}
-        })
-
-        res.status(200).json({msg:"Assignee removed"})
-    } catch (error) {
-        res.status(500).json({msg:"Something went wrong"});
-    }
-}
-
 
 module.exports = adminCtrl;
+

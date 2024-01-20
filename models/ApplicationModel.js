@@ -7,15 +7,7 @@ const ApplicationSchema = new mongoose.Schema({
     intake:{type:String},
     country:{type:String,required:true},
     creator:{type:mongoose.Types.ObjectId,required:true},
-    steps:{type:[
-                    {   
-                        _id:{type:Number},
-                        name:{type:String},
-                        status:{type:String},
-                        assignee:{type:mongoose.Types.ObjectId}
-                    }
-                ],
-         default:[]},
+    steppers:{type:Array,default:[]},
     documents:{type:[
                         {
                             name:{type:String},

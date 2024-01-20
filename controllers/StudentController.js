@@ -11,7 +11,7 @@ studentCtrl.CreateStudent = async(req,res)=>{
 
     const {name,email,password,phone,
         birthDate,age,qualification,
-        address} = req.body;
+        address,office} = req.body;
         
     console.log(req.body);
 
@@ -49,7 +49,7 @@ studentCtrl.CreateStudent = async(req,res)=>{
             name,email,
             password:hashedPassword,
             phone,birthDate,age,
-            qualification,address,image
+            qualification,address,image,office
         });
 
         const savedDoc = await newDocument.save();
