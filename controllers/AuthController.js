@@ -12,8 +12,8 @@ const authCtrl = {};
 const expiryAccessToken = "1h";
 const expiryRefreshToken = "30d";
 
-const maxAgeAccessCookie = 1000*60*60;
-const maxAgeRefreshCookie = 1000*60*60*24*30;
+const maxAgeAccessCookie = 1000 * 60 * 60;
+const maxAgeRefreshCookie = 1000 * 60 * 60 * 24 * 30;
 
 //Create Access Token;
 
@@ -28,12 +28,12 @@ const generateRefreshToken = (userInfo) => {
 }
 
 //Create OTP
-const generateOTP = ()=>{
+const generateOTP = () => {
     const digits = "0123456789";
 
     let otp = "";
 
-    for(let i=0; i < 6; i++){
+    for (let i = 0; i < 6; i++) {
         otp += digits[Math.floor(Math.random() * 10)]
     }
 
@@ -43,31 +43,31 @@ const generateOTP = ()=>{
 // Authentication method for Admin/Employee/Student;
 
 authCtrl.Login = async (req, res) => {
-    const email  = req.body.email;
-    console.log("email",email)
+    const email = req.body.email;
+    console.log("email", email)
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ msg: "Invalid Email format" });
 
     const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
-    if(!passwordRegex.test(req.body.password)) return res.status(400).json({ msg: "Invalid password format" });
+    if (!passwordRegex.test(req.body.password)) return res.status(400).json({ msg: "Invalid password format" });
 
     try {
         const emailCaseRegex = new RegExp(email, 'i')
 
-        const admin = await Admin.findOne({email: emailCaseRegex }).lean();
-        const employee = await Employee.findOne({email: emailCaseRegex }).lean();
-        const student = await Student.findOne({email: emailCaseRegex }).lean();
+        const admin = await Admin.findOne({ email: emailCaseRegex }).lean();
+        const employee = await Employee.findOne({ email: emailCaseRegex }).lean();
+        const student = await Student.findOne({ email: emailCaseRegex }).lean();
 
         let user;
 
-        if(admin){
+        if (admin) {
             user = admin;
-        } else if(employee){
+        } else if (employee) {
             user = employee;
-        } else if(student){
+        } else if (student) {
             user = student;
-        } else{
+        } else {
             return res.status(401).json({ msg: "Invalid email or password" })
         }
 
@@ -80,8 +80,10 @@ authCtrl.Login = async (req, res) => {
 
         const { password, ...userInfo } = user;
 
-        res.cookie('access_token', accessToken, { httpOnly: true,sameSite:"None", secure:true, maxAge: maxAgeAccessCookie });
-        res.cookie('refresh_token', refreshToken, { httpOnly: true, sameSite:"None", secure:true, maxAge: maxAgeRefreshCookie })
+        res.cookie('access_token', accessToken, { httpOnly: true, maxAge: maxAgeAccessCookie });
+        res.cookie('refresh_token', refreshToken, { httpOnly: true, maxAge: maxAgeRefreshCookie })
+        // res.cookie('access_token', accessToken, { httpOnly: true,sameSite:"None", secure:true, maxAge: maxAgeAccessCookie });
+        // res.cookie('refresh_token', refreshToken, { httpOnly: true, sameSite:"None", secure:true, maxAge: maxAgeRefreshCookie })
 
         res.status(200).json(userInfo)
 
@@ -120,89 +122,89 @@ authCtrl.Logout = async (req, res) => {
 }
 
 //Sent OTPs to The Mail id
-authCtrl.SendOTP = async(req,res)=>{
+authCtrl.SendOTP = async (req, res) => {
     const email = req.body.email;
     console.log(email)
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ msg: "Invalid Email format" });
 
-    const student = await Student.findOne({email}).lean();
-    const employee = await Employee.findOne({email}).lean();
+    const student = await Student.findOne({ email }).lean();
+    const employee = await Employee.findOne({ email }).lean();
 
-    if(!student && !employee){
-        return res.status(404).json({msg:"You are not registered with us"})
+    if (!student && !employee) {
+        return res.status(404).json({ msg: "You are not registered with us" })
     }
 
-    const otpExisting = await OtpModel.findOne({email})
-    if(otpExisting){
+    const otpExisting = await OtpModel.findOne({ email })
+    if (otpExisting) {
         await OtpModel.findByIdAndDelete(otpExisting._id);
     }
 
     try {
-        const OTP = generateOTP(); 
+        const OTP = generateOTP();
 
-        const otpDoc = new OtpModel({email,otp:OTP})
+        const otpDoc = new OtpModel({ email, otp: OTP })
         await otpDoc.save();
 
         const transporter = nodemailer.createTransport({
-            host:"smtp.gmail.com",
-            port:465,
-            secure:true,
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
             auth: {
-              user:process.env.MAIL_USER,
-              pass:process.env.MAIL_PASSWORD
+                user: process.env.MAIL_USER,
+                pass: process.env.MAIL_PASSWORD
             }
-          });
-        
-          const mailOptions = {
-            from:process.env.MAIL_USER,
+        });
+
+        const mailOptions = {
+            from: process.env.MAIL_USER,
             to: email,
             subject: "OTP to Change Password",
             text: OTP
-          };
-        
-          transporter.sendMail(mailOptions, (error, info)=> {
-            if (error) {
-              console.log(error);
-              return res.status(500).json({msg:"Couldn't Sent OTP "});
-            } else {
-              console.log('Email sent: ' + info.response);
-              return res.status(200).json({msg:"OTP Sent Successfully"})
-            }
-          });
+        };
 
-    }catch(error){
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.log(error);
+                return res.status(500).json({ msg: "Couldn't Sent OTP " });
+            } else {
+                console.log('Email sent: ' + info.response);
+                return res.status(200).json({ msg: "OTP Sent Successfully" })
+            }
+        });
+
+    } catch (error) {
         console.error(error);
-        res.status(500).json({msg:'Something went wrong'})
+        res.status(500).json({ msg: 'Something went wrong' })
     }
 }
 
 
 //Verify Email id;
-authCtrl.VerifyMail = async(req,res)=>{
+authCtrl.VerifyMail = async (req, res) => {
     const otp = req.body.otp;
     const email = req.body.email;
 
-    if(typeof otp !== 'string') return res.status(400).json({msg:"Invalid OTP format"})
-    
+    if (typeof otp !== 'string') return res.status(400).json({ msg: "Invalid OTP format" })
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ msg: "Invalid Email format" });
-    
+
     try {
-        const validOtp = await OtpModel.findOne({email,otp});
-        
-        if(!validOtp){
-            return res.status(403).json({msg:'Invalid Otp number'})
+        const validOtp = await OtpModel.findOne({ email, otp });
+
+        if (!validOtp) {
+            return res.status(403).json({ msg: 'Invalid Otp number' })
         }
-    
+
         await OtpModel.findByIdAndDelete(validOtp._id)
-        
-        res.status(200).json({msg:"Email verified"});
-        
+
+        res.status(200).json({ msg: "Email verified" });
+
     } catch (error) {
-        res.status(500).json({msg:"Something went wrong"});
-        
+        res.status(500).json({ msg: "Something went wrong" });
+
     }
 }
 
