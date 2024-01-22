@@ -11,5 +11,6 @@ router.get("/get/:id", authMiddleware, studentCtrl.GetStudent);
 router.put("/update", authMiddleware, adminCheckMiddleware, upload.single('image'), studentCtrl.UpdateStudent)
 router.put("/change-password", authMiddleware, studentCtrl.ChangePassword);
 
+router.get("/get-application/:id", authMiddleware, studentCtrl.GetMyApplication)
 
 module.exports = router;

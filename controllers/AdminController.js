@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Application = require("../models/ApplicationModel");
 const Employee = require("../models/EmployeeModel");
 const Work = require("../models/WorkModel");
+const Stepper = require("../models/StepperModel");
 const ObjectId = mongoose.Types.ObjectId;
 const adminCtrl = {};
 
@@ -177,6 +178,8 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
 adminCtrl.WorkAssign = async(req,res)=>{
     const {applicationId, employeeId,stepperId, stepNumber} = req.body;
 
+    console.log(applicationId, employeeId,stepperId, stepNumber)
+
     if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
         return res.status(400).json({msg:"Invalid Id format"});
     };
@@ -193,10 +196,12 @@ adminCtrl.WorkAssign = async(req,res)=>{
         if(!employee) return res.status(404).json({msg:"Employee not found"});
 
         //Update the assignee and status in that particular step
-        await Application.findOneAndUpdate({_id:applicationId, steppers:{$elemMatch:{_id:stepNumber}}},
-            {$set:{'steppers.$.assignee':employee._id,'steppers.$.status':"pending"}}
-            );
         
+        const modifiedStepper =  await Stepper.findOneAndUpdate({_id:new ObjectId(stepperId), steps:{$elemMatch:{_id:stepNumber}}},
+            {$set:{'steps.$.assignee':employee._id,'steps.$.status':"pending"}}, {new:true}
+            );
+
+
         const newWork = new Work({
             applicationId:application._id,
             stepperId: new ObjectId(stepperId),
@@ -215,7 +220,7 @@ adminCtrl.WorkAssign = async(req,res)=>{
         });
 
 
-        res.status(200).json({msg:"Work Assigned"})
+        res.status(200).json({msg:"Work Assigned",modifiedStepper})
     } catch (error) {
         res.status(500).json({msg:"Something went Wrong"})
         

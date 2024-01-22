@@ -14,6 +14,7 @@ studentCtrl.CreateStudent = async(req,res)=>{
         address,office} = req.body;
         
     console.log(req.body);
+    console.log("address", req.body.address);
 
     let image;
     if(req.file){
@@ -228,6 +229,108 @@ studentCtrl.ChangePassword = async(req,res)=>{
         res.status(500).json({msg:"Something went wrong"})
     }
 }
+
+
+studentCtrl.GetMyApplication = async (req, res) => {
+    const applicationId = req.params.id;
+
+    if (!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
+    }
+
+    try {
+        const resultArray = await Application.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(applicationId)
+                }
+            },
+            {
+                $lookup: {
+                    from: "students",
+                    localField: "studentId",
+                    foreignField: "_id",
+                    as: "student"
+                }
+            },
+            {
+                $lookup: {
+                    from: "employees",
+                    localField: "assignee",
+                    foreignField: "_id",
+                    as: "assignee"
+                }
+            },
+            {
+                $lookup: {
+                    from: "steppers",
+                    localField: "_id",
+                    foreignField: "applicationId",
+                    as: "steppers"
+                }
+            },
+            {
+                $unwind: "$student"
+            },
+            {
+                $unwind: "$assignee"
+            },
+            {
+                $project: {
+                    _id: 1,
+                    studentId:1,
+                    program:1,
+                    intake:1,
+                    country:1,
+                    creator:1,
+                    status:1,
+                    assignee:1,
+                    documents:1,
+                    createdAt:1,
+                    updatedAt:1,
+                    studentName: "$student.name",
+                    assignee: "$assignee.name",
+                    steppers: 1
+                }
+            }
+        ]);
+
+        if (!resultArray.length) return res.status(404).json({ msg: "Application doesn't exist" });
+
+        const statusArray = [];
+
+        for(const stepper of resultArray[0].steppers){
+            const checkObj = {};
+            const minStatusArr = [];
+
+            for(const step of stepper.steps){
+
+                const relatives = stepper.steps.filter((elem)=> elem.groupStatus === step.groupStatus);
+
+                checkObj[step.groupStatus] = relatives.every((elem)=> elem.status === "completed");
+            }
+
+
+            for(const obj in checkObj){
+                if(checkObj[obj]){
+                    minStatusArr.push({[obj]:"completed"})
+                }else{
+                    minStatusArr.push({[obj]:"incomplete"})
+
+                }
+            }
+
+            statusArray.push({university:stepper.university , partnership:stepper.partnership, arrayForMapping:minStatusArr})
+
+        }
+
+        const {steppers, ...result} = resultArray[0];
+
+        res.status(200).json({result, statusArray});
+    } catch (error) {
+        res.status(500).json({ msg: "Something went wrong" });
+    }
+};
 
 
 module.exports = studentCtrl;

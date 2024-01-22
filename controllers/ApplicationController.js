@@ -79,7 +79,9 @@ applicationCtrl.CreateApplication = async(req,res)=>{
                 })
             }
             else if(obj.partnership === "non-partnered"){
-                currentSteps = [...nonPartneredData]
+                currentSteps = nonPartneredData.filter((step)=>{
+                    return (step.country === "common" || step.country === country)
+                })
             }
     
             if(assignee){
@@ -95,6 +97,7 @@ applicationCtrl.CreateApplication = async(req,res)=>{
             const newStepper = new Stepper({
                 applicationId:application._id,
                 university: obj.university,
+                partnership: obj.partnership,
                 steps: currentSteps
             });
     

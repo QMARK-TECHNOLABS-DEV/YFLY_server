@@ -122,7 +122,7 @@ stepCtrl.GetAllSteppers = async(req,res)=>{
 }
 
 
-// Update Steps
+// Update Steps Note: Here if assignee is not present in a step on updation 
 stepCtrl.updateStepper = async(req,res)=>{
     const {stepperId, stepNumber, stepStatus, stepAssignee} = req.body;
 
@@ -138,8 +138,12 @@ stepCtrl.updateStepper = async(req,res)=>{
         const application = await Application.findById(stepperDoc.applicationId)
         if(!application) return res.status(404).json({msg:"Application not found"})
 
+        const assigneeExists = stepperDoc.steps.find((step)=> step._id === stepNumber && step.assignee !== undefined)
+        if(!assigneeExists) return res.status(404).json({msg:"Cannot update before assigning"})
+
         if(stepNumber){
             if(stepStatus){
+
                 stepperDoc = await Stepper.findOneAndUpdate({_id:stepperId, 'steps':{$elemMatch:{_id:stepNumber}}},
                 {$set:{'steps.$.status':stepStatus}},{new:true}
                 )
