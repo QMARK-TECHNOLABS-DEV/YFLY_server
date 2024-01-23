@@ -86,7 +86,7 @@ studentCtrl.GetAllStudents = async(req,res)=>{
     }
 
     let filters = {
-        $or:[...ORArray],
+        $or: [...ORArray],
         name : {$regex: new RegExp(name, "i")},
         email : {$regex: new RegExp(email, "i")},
         qualification : {$regex: new RegExp(qualification, "i")},

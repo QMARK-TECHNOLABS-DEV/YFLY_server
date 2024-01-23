@@ -147,12 +147,8 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
     // filters
     const country = req.query.country;
     const intake = req.query.intake;
-    const createdDateQuery = req.query.created_date;
-    const year = req.query.year;
-    const status = req.query.status;
-    const ackNmbr = req.query.ack_nmbr;
-    const program = req.query.program;
-    const studentName = req.query.student_name;
+    const startDateQuery = req.query.start_date;
+    const endDateQuery = req.query.end_date;
 
     //search query;
     const searchQuery = req.query.search;
@@ -167,7 +163,7 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
     if(searchQuery){
         searchFilter = {$or:[
         {_id:(ObjectId.isValid(searchQuery) ? new ObjectId(searchQuery) : searchQuery)},
-        {university:{ $regex: new RegExp(searchQuery,"i")}},
+        {"studentDetails.name":{ $regex: new RegExp(searchQuery,"i")}},
         {program:{ $regex: new RegExp(searchQuery,"i")}},
         {intake:{ $regex: new RegExp(searchQuery,"i")}},
         {country:{ $regex: new RegExp(searchQuery,"i")}},
@@ -177,21 +173,12 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
 
     if(intake){filters.intake = {$regex : new RegExp(intake, 'i')}};
 
-    if(createdDateQuery){
-        filters.createdAt = new Date(`${createdDateQuery}T00:00:00.000+05:30`)
+    if(startDateQuery && endDateQuery){
+        const startDate = new Date(`${startDateQuery}T00:00:00.000+05:30`);
+        const endDate = new Date(`${endDateQuery}T00:00:00.000+05:30`);
+        filters.createdAt = {$gte:startDate, $lte:endDate}
     };
 
-    if(year){
-        const yearStart = new Date(`${year}-01-01T00:00:00.000+05:30`);
-        const yearEnd = new Date(`${parseInt(year) + 1}-01-01T00:00:00.000+05:30`);
-        filters.createdAt = {$gte:yearStart, $lt:yearEnd};
-    };
-
-    if(status){filters.status = {$regex : new RegExp(status, 'i')}};
-
-    if(ackNmbr){filters._id = new ObjectId(ackNmbr)};
-
-    if(program){filters.program = {$regex : new RegExp(program, 'i')}};
 
     console.log(filters);
 
@@ -236,8 +223,7 @@ applicationCtrl.GetAllApplications = async(req,res)=>{
                     },
                     {
                         $match: {
-                        ...filters,...searchFilter,
-                        "studentDetails.name": studentName ? { $regex: new RegExp(studentName, 'i') } : { $exists: true }
+                        ...filters,...searchFilter
                         }
                     },
                     {
