@@ -7,7 +7,7 @@ const employeeChecker = require("../middlewares/employeeChecker");
 router.post("/create",authMiddleware,adminCheckMiddleware, projectCtrl.CreateProject)
 router.get("/get-all",authMiddleware,adminCheckMiddleware, projectCtrl.GetAllProjects)
 router.get("/get/:id",authMiddleware, employeeChecker, projectCtrl.GetProject)
-router.get("/get-task/:id/:taskid",authMiddleware, employeeChecker, projectCtrl.GetATaskOfAProject)
+router.get("/get-task/:id",authMiddleware, employeeChecker, projectCtrl.GetATaskOfAProject)
 router.put("/change-task-status",authMiddleware, employeeChecker, projectCtrl.ChangeTaskStatus)
 router.delete("/delete/:id",authMiddleware,adminCheckMiddleware, projectCtrl.DeleteProject)
 
@@ -17,5 +17,7 @@ router.delete("/delete-task/:id", authMiddleware,adminCheckMiddleware, projectCt
 router.put("/update-task", authMiddleware,adminCheckMiddleware, projectCtrl.UpdateTask)
 
 router.put("/update", authMiddleware, adminCheckMiddleware, projectCtrl.UpdateProject)
+
+router.put("/rework-task/:id", authMiddleware, adminCheckMiddleware, projectCtrl.ReworkTask)
 
 module.exports = router;

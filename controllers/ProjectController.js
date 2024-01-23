@@ -1,3 +1,4 @@
+const Comment = require("../models/CommentModel");
 const Employee = require("../models/EmployeeModel");
 const Project = require("../models/ProjectModel");
 const Task = require("../models/TaskModel");
@@ -265,7 +266,7 @@ projectCtrl.GetAllTasksOfAProject = async(req,res)=>{
 
         const taskArray = await Task.aggregate([
             {
-                $match: {projectId: new ObjectId(projectId) }
+                $match: { projectId: new ObjectId(projectId) }
             },
             {
                 $lookup: {
@@ -291,7 +292,7 @@ projectCtrl.GetAllTasksOfAProject = async(req,res)=>{
             },
             {
                 $lookup: {
-                    from: "comments", 
+                    from: "comments",
                     localField: "comments",
                     foreignField: "_id",
                     as: "commentsDetails"
@@ -308,27 +309,31 @@ projectCtrl.GetAllTasksOfAProject = async(req,res)=>{
             },
             {
                 $project: {
-                    projectId:1,
-                    assignee:1,
-                    taskName:1,
-                    taskStatus:1,
-                    comments:1,
+                    projectId: 1,
+                    assignee: 1,
+                    taskName: 1,
+                    taskStatus: 1,
                     'assigneeName': 1,
-                    "projectName":1,
-                    "startDate":1,
-                    "endDate":1,
-                    "status":1,
+                    "projectName": 1,
+                    "startDate": 1,
+                    "endDate": 1,
+                    "status": 1,
+                    comments: { $ifNull: ["$commentsDetails", []] },
                 }
             },
             {
-                $group:{
+                $group: {
                     _id:"$assignee",
-                    assigneeName:{$first:"$assigneeName"},
-                    tasks:{$push:"$$ROOT"}
+                    assigneeName: { $first: "$assigneeName" },
+                    tasks: { $push: "$$ROOT" },
                 }
             },
+            {
+                $sort: { "_id": 1 }
+            },
         ]);
-
+        
+        
         res.status(200).json(taskArray)
     } catch (error) {
         res.status(500).json({msg:"Something went wrong"})
@@ -338,10 +343,10 @@ projectCtrl.GetAllTasksOfAProject = async(req,res)=>{
 
 // Get a task of a project
 projectCtrl.GetATaskOfAProject = async(req,res)=>{
-    const projectId = req.params.id;
-    const taskId = req.params.taskid;
+    // const projectId = req.params.id;
+    const taskId = req.params.id;
 
-    if(!(typeof projectId === 'string' || ObjectId.isValid(projectId))){
+    if(!(typeof taskId === 'string' || ObjectId.isValid(taskId))){
         return res.status(400).json({msg:"Invalid Id format"});
     }
 
@@ -382,19 +387,10 @@ projectCtrl.GetATaskOfAProject = async(req,res)=>{
                     "status":'$projectDetails.status',
                 }
             },
-           
             {
-                $project: {
-                    projectId:1,
-                    assignee:1,
-                    taskName:1,
-                    taskStatus:1,
-                    comments:1,
-                    'assigneeName': 1,
-                    "projectName":1,
-                    "startDate":1,
-                    "endDate":1,
-                    "status":1,
+                $unwind:{
+                    path:"$comments",
+                    preserveNullAndEmptyArrays:true
                 }
             },
             {
@@ -404,12 +400,28 @@ projectCtrl.GetATaskOfAProject = async(req,res)=>{
                     foreignField: "_id",
                     as: "commentsDetails"
                 }
-            }
-            
-            
+            },
+            {
+                $unwind:{
+                    path:"$commentsDetails",
+                    preserveNullAndEmptyArrays:true
+                }
+            },
+            {
+                $group: {
+                    _id:"$_id",
+                    assignee:{$first:"$assignee"},
+                    taskName:{$first:"$taskName"},
+                    taskStatus:{$first:"$taskStatus"},
+                    'assigneeName': {$first:"$assigneeName"},
+                    "projectName":{$first:"$projectName"},
+                    "startDate":{$first:"$startDate"},
+                    "endDate":{$first:"$endDate"},
+                    "status":{$first:"$status"},
+                    comments:{$push:"$commentsDetails"},
+                }
+            },
         ]);
-        
-
 
         const result = taskArray[0]
 
@@ -420,7 +432,7 @@ projectCtrl.GetATaskOfAProject = async(req,res)=>{
 
 }
 
-// Update Status;
+// Update Task Status;
 projectCtrl.ChangeTaskStatus = async(req,res)=>{
     const { taskId, taskStatus } = req.body;
 
@@ -466,23 +478,13 @@ projectCtrl.ChangeTaskStatus = async(req,res)=>{
         }
 
         //If Status eq completed Remove the project id from employee's currentTasks array
-        // else if status eq pending add the project id to employee's currentTasks cause it is Rework from admin
 
         if(taskStatus === "completed"){
             await Employee.findByIdAndUpdate(employee._id,{
                 $pull:{currentTasks:task._id}
             })
         }
-        else if(taskStatus === "pending"){
-            const taskAlreadyExists = employee.currentTasks.includes(task._id);
 
-            if(!taskAlreadyExists){
-                await Employee.findByIdAndUpdate(employee._id,{
-                    $push:{currentTasks:task._id}
-                })
-            }
-        }
-     
         console.log(updatedTask)   
 
         res.status(200).json(updatedTask);    
@@ -493,9 +495,77 @@ projectCtrl.ChangeTaskStatus = async(req,res)=>{
 
 }
 
+// Rework the Task (from Admin)
+projectCtrl.ReworkTask = async(req,res)=>{
+    const taskId  = req.params.id;
+
+    if(!(typeof taskId === 'string' || ObjectId.isValid(taskId))){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
+
+    try {
+        const task = await Task.findById(taskId);
+        if(!task) return res.status(404).json({msg:"task doesn't exist"})
+
+        const project = await Project.findById(task.projectId);
+        if(!project) return res.status(404).json({msg:"Project doesn't exist"});
+
+        const employee = await Employee.findById(task.assignee)
+        if(!employee) res.status(404).json({msg:"Employee not found"})
+
+        const reworkingTask = await Task.findByIdAndUpdate(taskId, 
+                {$set:{taskStatus:"pending"}}, {new:true}
+            );
+
+        const relatedTasks = await Task.find({projectId:project._id})
+
+        let isOngoing = relatedTasks.some((task)=>{
+            return task.taskStatus === "ongoing"
+        })       
+        
+        if(isOngoing){
+            await Project.findByIdAndUpdate(project._id,
+                {$set:{status:"ongoing"}}, {new:true}
+                )
+        }else{
+            let someCompleted = relatedTasks.some((task)=>{
+                return task.taskStatus === "completed"
+            })
+
+            if(!someCompleted){
+                await Project.findByIdAndUpdate(project._id,
+                    {$set:{status:"pending"}}, {new:true}
+                    )
+            }else{
+                await Project.findByIdAndUpdate(project._id,
+                    {$set:{status:"ongoing"}}, {new:true}
+                    )
+            }
+        }
+        
+        const taskAlreadyExists = employee.currentTasks.includes(task._id);
+
+        if(!taskAlreadyExists){
+            await Employee.findByIdAndUpdate(employee._id,{
+                $push:{currentTasks:task._id}
+            })
+        }
+     
+        console.log(reworkingTask)   
+
+        res.status(200).json(reworkingTask);    
+        
+    } catch (error) {
+        res.status(500).json({msg:"Something went wrong"})
+    }
+
+}
+
+
+
 // Update Task;
 projectCtrl.UpdateTask = async(req,res)=>{
-    const { taskId, assignee, taskName, taskStatus } = req.body;
+    const { taskId, taskName} = req.body;
 
     if(!(typeof taskId === 'string')){
         return res.status(400).json({msg:"Invalid Id format"});
@@ -503,9 +573,7 @@ projectCtrl.UpdateTask = async(req,res)=>{
 
     const updates = {}
 
-    if(assignee){ updates.assignee = new ObjectId(assignee)}
     if(taskName){ updates.taskName = taskName}
-    if(taskStatus){ updates.taskStatus = taskStatus}
 
     try {
         const task = await Task.findById(taskId);
@@ -527,7 +595,7 @@ projectCtrl.UpdateTask = async(req,res)=>{
 projectCtrl.DeleteATask = async(req,res)=>{
     const taskId = req.params.id;
 
-    if(!taskId) return res.status(400).json({msg:"Invalid Task id"})
+    if(!taskId) return res.status(400).json({msg:"Invalid Task id format"})
 
     
     try {
@@ -545,7 +613,6 @@ projectCtrl.DeleteATask = async(req,res)=>{
         })
 
         await Comment.deleteMany({resourceId : task._id})
-
 
         res.sendStatus(204)
     } catch (error) {
