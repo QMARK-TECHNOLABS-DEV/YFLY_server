@@ -5,16 +5,8 @@ const ProjectSchema = new mongoose.Schema({
     status:{type:String, default:"pending"},
     startDate:{type:Date},
     endDate:{type:Date},
-    tasks:{type:[
-                    {
-                        assignee:{type:mongoose.Types.ObjectId},
-                        taskName:{type:String},
-                        taskStatus:{type:String, default:"pending"},
-                        comments:{type:Array, default:[]}
-                    }
-                ],
-            default:[]
-          },
+    members:{type:Array, default:[]},
+    tasks:{type:Array,default:[]},
 });
 
 const Project = mongoose.model("Project", ProjectSchema);

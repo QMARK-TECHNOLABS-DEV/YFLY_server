@@ -3,20 +3,21 @@ const Comment = require("../models/CommentModel");
 const Application = require("../models/ApplicationModel");
 const Project = require("../models/ProjectModel");
 const Employee = require("../models/EmployeeModel");
+const Task = require("../models/TaskModel");
 const ObjectId = mongoose.Types.ObjectId;
 const commentCtrl = {};
 
-// Get all Comments of an Application/Project;
+// Get all Comments of an Application/Task of Project;
 commentCtrl.GetComments = async(req,res)=>{
     const resourceId = req.params.id;
     const resourceType = req.params.type;
      
     console.log("resourceId",resourceId);
-    if(!(typeof resourceId === 'string' || ObjectId.isValid(resourceId))){
+    if(!(typeof resourceId === 'string')){
         return res.status(400).json({msg:"Invalid Id format"});
     }
 
-    if(!(resourceType === "application" || resourceType === "project")){
+    if(!(resourceType === "application" || resourceType === "task")){
         return res.status(400).json({msg:"Resource type is invalid"})
     }
 
@@ -82,14 +83,14 @@ commentCtrl.GetComments = async(req,res)=>{
 }
 
 // Add comment;
-
+// In case of Project, resourceId wil be taskId and resourceType will be task
 commentCtrl.AddComment = async(req,res)=>{
-    const {resourceId,resourceType,taskId,
+    const {resourceId,resourceType,
         commentorId,comment} = req.body;
     
     const fromAdmin = req.user.role === "admin";
 
-    if(!(typeof resourceId === 'string' || ObjectId.isValid(resourceId))){
+    if(!(typeof resourceId === 'string')){
         return res.status(400).json({msg:"Invalid Id format"});
     }
 
@@ -101,7 +102,7 @@ commentCtrl.AddComment = async(req,res)=>{
         return res.status(400).json({msg:"Invalid Comment"});
     };
 
-    if(!(resourceType === "application" || resourceType === "project")){
+    if(!(resourceType === "application" || resourceType === "task")){
         return res.status(400).json({msg:"Resource Type is not valid"});
     };
 
@@ -118,14 +119,13 @@ commentCtrl.AddComment = async(req,res)=>{
                 return res.status(400).json({msg:"Application doesn't exists"})
             }
         }
-        else if(resourceType === "project"){
-            const projectExists = await Project.findById(resourceId);
+        else if(resourceType === "task"){
+            const taskExists = await Task.findById(resourceId);
 
-            if(!projectExists){
-                return res.status(400).json({msg:"Project doesn't exists"})
+            if(!taskExists){
+                return res.status(400).json({msg:"task doesn't exists"})
             }
         }
-
 
         const newComment = new Comment({
             resourceId: new ObjectId(resourceId),
@@ -138,9 +138,9 @@ commentCtrl.AddComment = async(req,res)=>{
         const savedComment = await newComment.save();
         console.log(savedComment);
 
-        if(resourceType === "project"){
-            await Project.updateOne({_id:new ObjectId(resourceId), "tasks._id": new ObjectId(taskId)},
-                {$push:{"tasks.$.comments":savedComment._id}}
+        if(resourceType === "task"){
+            await Task.updateOne({_id:new ObjectId(resourceId)},
+                {$push:{comments:savedComment._id}}
             )
         }
 

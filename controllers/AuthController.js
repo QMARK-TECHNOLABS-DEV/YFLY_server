@@ -206,6 +206,6 @@ authCtrl.VerifyMail = async (req, res) => {
         res.status(500).json({ msg: "Something went wrong" });
 
     }
-}
+} 
 
 module.exports = authCtrl;

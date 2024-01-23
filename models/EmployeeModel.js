@@ -19,7 +19,7 @@ const EmployeeSchema = new mongoose.Schema({
     }},
     image:{type:String},
     currentWorks: {type:Array, default:[]},
-    currentProjects: {type:Array, default:[]},
+    currentTasks: {type:Array, default:[]},
     isActive:{type:Boolean, default:true},
     office:{type:String}
 })

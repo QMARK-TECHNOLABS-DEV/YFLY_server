@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Application = require("../models/ApplicationModel");
 const Work = require("../models/WorkModel");
 const Project = require("../models/ProjectModel");
+const Task = require("../models/TaskModel");
 const ObjectId = mongoose.Types.ObjectId;
 
 const employeeCtrl = {};
@@ -384,32 +385,30 @@ employeeCtrl.GetMyProjectTasks = async(req,res)=>{
         const employee = await Employee.findById(employeeId);
         if(!employee) return res.status(404).json({msg:"Employee Not Found"});
 
-        const currentProjects = employee.currentProjects;
+        const currentWorks = employee.currentWorks;
 
-        const result = await Project.aggregate([
-            {$match:{_id:{$in:[...currentProjects]}}},
-            {
-                $unwind:"$tasks"
-            },
-            {
-                $match:{"tasks.assignee":new ObjectId(employeeId)}
-            },
-            {
-                $group: {
-                    _id: "$_id",
-                    name: { $first: "$name" },
-                    status: { $first: "$status" },
-                    startDate: { $first: "$startDate" },
-                    endDate: { $first: "$endDate" },
-                    tasks: { $push: "$tasks" }
-                }
-            },
+        const result = await Task.aggregate([
+            {$match:{_id:{$in:[...currentWorks]}}},
             {
                 $lookup: {
                     from: "comments", 
-                    localField: "tasks.comments",
+                    localField: "comments",
                     foreignField: "_id",
                     as: "commentsDetails"
+                }
+            },
+            {
+                $group:{
+                    _id:"$projectId",
+                    tasks:{$push:"$$ROOT"}
+                }
+            },
+            {
+                $lookup:{
+                    from:"projects",
+                    localField:"_id",
+                    foreignField:"_id",
+                    as:"projectDetails"
                 }
             },
             {
