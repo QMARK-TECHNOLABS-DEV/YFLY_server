@@ -69,6 +69,10 @@ applicationCtrl.CreateApplication = async(req,res)=>{
         const application = await newDocument.save();
         console.log("application",application);
 
+        if(!Array.isArray(uniBased)){
+            return res.status(400).json({msg:"Unibased is not an array"})
+        }
+
         // Creating parallel steps according to the universities;
         for(const obj of uniBased){
             let currentSteps = [];
