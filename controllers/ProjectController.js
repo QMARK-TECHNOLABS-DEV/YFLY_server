@@ -48,39 +48,41 @@ projectCtrl.GetAllProjects = async(req,res)=>{
 
         const allProjects = await Project.aggregate([
             {
-                $unwind:"$tasks"
+                $unwind:{path:"$tasks",preserveNullAndEmptyArrays:true}
+            },
+            {
+                $lookup:{
+                    from:"tasks",
+                    localField:"tasks",
+                    foreignField:"_id",
+                    as:"taskDetails"
+                }
+            },
+            {
+                $unwind:{path:"$taskDetails", preserveNullAndEmptyArrays:true}
             },
             {
                 $lookup:{
                     from:"employees",
-                    localField:"tasks.assignee",
+                    localField:"members",
                     foreignField:"_id",
-                    as:"assigneeDetails"
-                },
-            },
-            {
-                $unwind:"$assigneeDetails"
-            },
-            {
-                $set:{
-                    'tasks.assigneeName':"$assigneeDetails.name"
+                    as:"memberDetails"
                 }
             },
             {
                 $group:{
-                    _id:'$_id',
+                    _id:"$_id",
                     name:{$first:"$name"},
                     status:{$first:"$status"},
                     startDate:{$first:"$startDate"},
                     endDate:{$first:"$endDate"},
-                    tasks:{$push:"$tasks"}
+                    members:{$first:"$memberDetails._id"},
+                    tasks:{$push:"$taskDetails"}
                 }
             },
             {
                 $sort:{_id:1}
             }
-            
-
         ])
         
         let result;
@@ -117,18 +119,21 @@ projectCtrl.GetProject = async(req,res)=>{
             },
             {
                 $lookup:{
-                    from:"employees",
-                    localField:"tasks.assignee",
+                    from:"tasks",
+                    localField:"tasks",
                     foreignField:"_id",
-                    as:"assigneeDetails"
+                    as:"taskDetails"
                 }
             },
             {
-                $unwind:"$assigneeDetails"
+                $unwind:"$taskDetails"
             },
             {
-                $set:{
-                    'tasks.assigneeName':"$assigneeDetails.name"
+                $lookup:{
+                    from:"employees",
+                    localField:"members",
+                    foreignField:"_id",
+                    as:"memberDetails"
                 }
             },
             {
@@ -138,7 +143,8 @@ projectCtrl.GetProject = async(req,res)=>{
                     status:{$first:"$status"},
                     startDate:{$first:"$startDate"},
                     endDate:{$first:"$endDate"},
-                    tasks:{$push:"$tasks"}
+                    members:{$first:"$memberDetails._id"},
+                    tasks:{$push:"$taskDetails"}
                 }
             }
         ])
