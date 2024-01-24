@@ -115,7 +115,9 @@ projectCtrl.GetProject = async(req,res)=>{
         const projectArray = await Project.aggregate([
             {$match:{_id:new ObjectId(projectId)}},
             {
-                $unwind:"$tasks"
+                $unwind:{
+                    path:"$tasks",
+                    preserveNullAndEmptyArrays:true}
             },
             {
                 $lookup:{
@@ -126,7 +128,9 @@ projectCtrl.GetProject = async(req,res)=>{
                 }
             },
             {
-                $unwind:"$taskDetails"
+                $unwind:{
+                    path:"$taskDetails",
+                    preserveNullAndEmptyArrays:true}
             },
             {
                 $lookup:{
