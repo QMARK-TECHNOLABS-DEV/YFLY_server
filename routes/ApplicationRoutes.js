@@ -7,7 +7,7 @@ const upload = require("../middlewares/multerToS3");
 const employeeChecker = require("../middlewares/employeeChecker");
 
 router.post("/create", authMiddleware, adminCheckMiddleware, applicationCtrl.CreateApplication);
-router.get("/get-all", authMiddleware, adminCheckMiddleware, applicationCtrl.GetAllApplications);
+router.get("/get-all", authMiddleware, employeeChecker, applicationCtrl.GetAllApplications);
 router.get("/get/:id", authMiddleware, applicationCtrl.GetApplication);
 router.put("/update", authMiddleware, employeeChecker, applicationCtrl.UpdateApplication);
 router.delete("/delete/:id", authMiddleware, adminCheckMiddleware, applicationCtrl.DeleteApplication);
