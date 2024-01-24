@@ -248,9 +248,13 @@ projectCtrl.AddTask = async(req,res)=>{
             $push:{tasks: task._id, members: employee._id}
         })
 
-        await Employee.findByIdAndUpdate(employee._id,{
-            $push:{currentTasks: task._id}
-        })
+        const currentTasks = employee?.currentTasks;
+
+        if(!currentTasks.includes(task._id)){
+            await Employee.findByIdAndUpdate(employee._id,{
+                $push:{currentTasks: task._id}
+            })
+        }
 
         res.status(200).json(task)
     } catch (error) {
