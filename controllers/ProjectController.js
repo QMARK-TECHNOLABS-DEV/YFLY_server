@@ -643,4 +643,26 @@ projectCtrl.DeleteATask = async(req,res)=>{
 }
 
 
+projectCtrl.GetMembers = async(req,res)=>{
+    const projectId = req.params.id;
+
+    if(!(typeof projectId === 'string')){
+        return res.status(400).json({msg:"Invalid Id format"});
+    }
+
+    try {
+        const project = await Project.findById(projectId);
+        if(!project) return res.status(400).json({msg:"Project not found"})
+
+        const members = project?.members || [];
+        console.log("members", members)
+
+        const result = await Employee.find({_id:{$in:members}}, {password:0})
+        
+        res.status(200).json(result)
+    } catch (error) {
+        res.status(500).json({msg:"Something went wrong"})
+    }
+}
+
 module.exports = projectCtrl;

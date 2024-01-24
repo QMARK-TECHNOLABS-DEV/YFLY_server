@@ -20,4 +20,7 @@ router.put("/update", authMiddleware, adminCheckMiddleware, projectCtrl.UpdatePr
 
 router.put("/rework-task/:id", authMiddleware, adminCheckMiddleware, projectCtrl.ReworkTask)
 
+
+router.get("/get-members/:id", authMiddleware, adminCheckMiddleware, projectCtrl.GetMembers)
+
 module.exports = router;
