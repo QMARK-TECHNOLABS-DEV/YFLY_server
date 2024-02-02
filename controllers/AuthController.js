@@ -41,7 +41,6 @@ const generateOTP = () => {
 }
 
 // Authentication method for Admin/Employee/Student;
-
 authCtrl.Login = async (req, res) => {
     const email = req.body.email;
     console.log("email", email)
@@ -94,7 +93,6 @@ authCtrl.Login = async (req, res) => {
 }
 
 //Regenerate Access Token using Refresh Token;
-
 authCtrl.regenerateAccessToken = async (req, res) => {
     const refreshToken = req.cookies.refresh_token;
 
