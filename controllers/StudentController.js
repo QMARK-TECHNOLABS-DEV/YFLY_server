@@ -141,46 +141,43 @@ studentCtrl.GetStudent = async (req, res) => {
 
 studentCtrl.UpdateStudent = async (req, res) => {
     console.log(req.body);
-    const stdtId = req.body.studentId;
+    const studentId = req.params.id;
+    const updates = req.body;
 
-    if (!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))) {
+    if (!(typeof studentId === 'string' || ObjectId.isValid(studentId))) {
         return res.status(400).json({ msg: "Invalid Id format" });
     }
 
     try {
 
 
-        const student = await Student.findById(stdtId);
+        const student = await Student.findById(studentId);
         if (!student) return res.status(404).json({ msg: "Student not found" });
 
-        if (req.body.name) {
-            {
-                const nameRegex = /^[A-Za-z ]{3,}$/;
-                if (!nameRegex.test(req.body.name)) return res.status(400).json({ msg: "Invalid Name format" });
-            }
+        if (updates.name) {
+            const nameRegex = /^[A-Za-z ]{3,}$/;
+            if (!nameRegex.test(updates.name)) return res.status(400).json({ msg: "Invalid Name format" });
         }
 
-        if (req.body.email) {
+        if (updates.email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(req.body.email)) return res.status(400).json({ msg: "Invalid Email format" });
+            if (!emailRegex.test(updates.email)) return res.status(400).json({ msg: "Invalid Email format" });
         }
-
-        let { studentId, ...updates } = req.body;
 
         if (req.file) {
             updates.image = req.file.location
         }
 
-        if (req.body.password) {
+        if (updates.password) {
             const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(req.body.password, salt);
+            const hashedPassword = await bcrypt.hash(updates.password, salt);
 
             updates.password = hashedPassword;
         }
 
         console.log("updates", updates);
 
-        const updatedDocument = await Student.findByIdAndUpdate(stdtId, {
+        const updatedDocument = await Student.findByIdAndUpdate(studentId, {
             $set: updates
         }, { new: true });
 

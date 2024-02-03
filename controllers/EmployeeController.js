@@ -149,47 +149,43 @@ employeeCtrl.GetEmployee = async (req, res) => {
 
 employeeCtrl.UpdateEmployee = async (req, res) => {
     console.log(req.body);
-    const empId = req.body.employeeId;
+    const employeeId = req.params.id;
+    const updates = req.body;
 
-    if (!(typeof empId === 'string' || ObjectId.isValid(empId))) {
+    if (!(typeof employeeId === 'string' || ObjectId.isValid(employeeId))) {
         return res.status(400).json({ msg: "Invalid Id format" });
     }
 
     try {
 
-        const employee = await Employee.findById(empId);
+        const employee = await Employee.findById(employeeId);
         if (!employee) return res.status(404).json({ msg: "Employee not found" })
 
-        if (req.body.name) {
-            {
-                const nameRegex = /^[A-Za-z ]{3,}$/;
-                if (!nameRegex.test(req.body.name)) return res.status(400).json({ msg: "Invalid Name format" });
-            }
+        if (updates.name) {
+            const nameRegex = /^[A-Za-z ]{3,}$/;
+            if (!nameRegex.test(updates.name)) return res.status(400).json({ msg: "Invalid Name format" });
         }
 
-        if (req.body.email) {
+        if (updates.email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(req.body.email)) return res.status(400).json({ msg: "Invalid Email format" });
+            if (!emailRegex.test(updates.email)) return res.status(400).json({ msg: "Invalid Email format" });
         }
-
-
-        let { employeeId, ...updates } = req.body;
 
         if (req.file) {
             updates.image = req.file.location
         }
 
-        if (req.body.password) {
+        if (updates.password) {
 
             const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(req.body.password, salt);
+            const hashedPassword = await bcrypt.hash(updates.password, salt);
 
             updates.password = hashedPassword;
         }
 
         console.log("updates", updates);
 
-        const updatedDocument = await Employee.findByIdAndUpdate(empId, {
+        const updatedDocument = await Employee.findByIdAndUpdate(employeeId, {
             $set: updates
         }, { new: true });
 

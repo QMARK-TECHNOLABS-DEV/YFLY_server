@@ -9,7 +9,7 @@ const employeeChecker = require("../middlewares/employeeChecker");
 router.post("/create", authMiddleware, adminCheckMiddleware, upload.single('image'), employeeCtrl.CreateEmployee);
 router.get("/get-all", authMiddleware, employeeChecker, employeeCtrl.GetAllEmployees )
 router.get("/get/:id", authMiddleware, employeeCtrl.GetEmployee);
-router.put("/update", authMiddleware, adminCheckMiddleware, upload.single('image'), employeeCtrl.UpdateEmployee)
+router.put("/update/:id", authMiddleware, adminCheckMiddleware, upload.single('image'), employeeCtrl.UpdateEmployee)
 router.put("/change-password", authMiddleware,employeeChecker, employeeCtrl.ChangePassword);
 router.put("/deactivate/:id", authMiddleware, adminCheckMiddleware, employeeCtrl.DeactivateEmployee)
 
