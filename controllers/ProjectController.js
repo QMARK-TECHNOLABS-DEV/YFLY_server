@@ -236,14 +236,14 @@ projectCtrl.AddTask = async (req, res) => {
     if (!(typeof projectId === 'string' || typeof assignee === 'string' || typeof taskName === 'string')) {
         return res.status(400).json({ msg: "Invalid format" });
     }
-
-    const project = await Project.findById(projectId);
-    if (!project) return res.status(400).json({ msg: "Project not found" });
-
-    const employee = await Employee.findById(assignee);
-    if (!employee) return res.status(400).json({ msg: "employee not found" })
-
     try {
+
+        const project = await Project.findById(projectId);
+        if (!project) return res.status(400).json({ msg: "Project not found" });
+
+        const employee = await Employee.findById(assignee);
+        if (!employee) return res.status(400).json({ msg: "employee not found" })
+
         const task = await Task.create({
             projectId: new ObjectId(projectId),
             assignee: new ObjectId(assignee),

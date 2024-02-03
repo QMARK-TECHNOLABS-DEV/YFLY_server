@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
-const { maxAgeAccessCookie ,maxAgeRefreshCookie, 
+const { maxAgeAccessCookie, maxAgeRefreshCookie,
     generateAccessToken, generateRefreshToken } = require("../middlewares/tokenMiddlewares");
 const authCtrl = {};
 
@@ -33,15 +33,12 @@ authCtrl.Login = async (req, res) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ msg: "Invalid Email format" });
 
-    const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
-    if (!passwordRegex.test(req.body.password)) return res.status(400).json({ msg: "Invalid password format" });
-
     try {
         const emailCaseRegex = new RegExp(email, 'i')
 
         const admin = await Admin.findOne({ email: emailCaseRegex }).lean();
-        const employee = await Employee.findOne({ email: emailCaseRegex, isActive:true }).lean();
-        const student = await Student.findOne({ email: emailCaseRegex, isActive:true  }).lean();
+        const employee = await Employee.findOne({ email: emailCaseRegex, isActive: true }).lean();
+        const student = await Student.findOne({ email: emailCaseRegex, isActive: true }).lean();
 
         let user;
 
@@ -66,8 +63,8 @@ authCtrl.Login = async (req, res) => {
 
         // res.cookie('access_token', accessToken, { httpOnly: true, maxAge: maxAgeAccessCookie });
         // res.cookie('refresh_token', refreshToken, { httpOnly: true, maxAge: maxAgeRefreshCookie })
-        res.cookie('access_token', accessToken, { httpOnly: true,sameSite:"None", secure:true, maxAge: maxAgeAccessCookie });
-        res.cookie('refresh_token', refreshToken, { httpOnly: true, sameSite:"None", secure:true, maxAge: maxAgeRefreshCookie })
+        res.cookie('access_token', accessToken, { httpOnly: true, sameSite: "None", secure: true, maxAge: maxAgeAccessCookie });
+        res.cookie('refresh_token', refreshToken, { httpOnly: true, sameSite: "None", secure: true, maxAge: maxAgeRefreshCookie })
 
         res.status(200).json(userInfo)
 
@@ -189,6 +186,6 @@ authCtrl.VerifyMail = async (req, res) => {
         res.status(500).json({ msg: "Something went wrong" });
 
     }
-} 
+}
 
 module.exports = authCtrl;

@@ -8,17 +8,17 @@ const ObjectId = mongoose.Types.ObjectId;
 const commentCtrl = {};
 
 // Get all Comments of an Application/Task of Project;
-commentCtrl.GetComments = async(req,res)=>{
+commentCtrl.GetComments = async (req, res) => {
     const resourceId = req.params.id;
     const resourceType = req.params.type;
-     
-    console.log("resourceId",resourceId);
-    if(!(typeof resourceId === 'string')){
-        return res.status(400).json({msg:"Invalid Id format"});
+
+    console.log("resourceId", resourceId);
+    if (!(typeof resourceId === 'string')) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    if(!(resourceType === "application" || resourceType === "task")){
-        return res.status(400).json({msg:"Resource type is invalid"})
+    if (!(resourceType === "application" || resourceType === "task")) {
+        return res.status(400).json({ msg: "Resource type is invalid" })
     }
 
     try {
@@ -72,58 +72,58 @@ commentCtrl.GetComments = async(req,res)=>{
                 }
             }
         ]);
-        
 
-        console.log("comments",comments);
+
+        console.log("comments", comments);
 
         res.status(200).json(comments);
     } catch (error) {
-        res.status(500).json({msg:"Something went wrong"});
+        res.status(500).json({ msg: "Something went wrong" });
     }
 }
 
 // Add comment;
 // In case of Project, resourceId wil be taskId and resourceType will be task
-commentCtrl.AddComment = async(req,res)=>{
-    const {resourceId,resourceType,
-        commentorId,comment} = req.body;
-    
+commentCtrl.AddComment = async (req, res) => {
+    const { resourceId, resourceType,
+        commentorId, comment } = req.body;
+
     const fromAdmin = req.user.role === "admin";
 
-    if(!(typeof resourceId === 'string')){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof resourceId === 'string')) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    if(!(typeof commentorId === 'string' || ObjectId.isValid(commentorId))){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof commentorId === 'string' || ObjectId.isValid(commentorId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    if(typeof comment !== 'string' ){
-        return res.status(400).json({msg:"Invalid Comment"});
+    if (typeof comment !== 'string') {
+        return res.status(400).json({ msg: "Invalid Comment" });
     };
 
-    if(!(resourceType === "application" || resourceType === "task")){
-        return res.status(400).json({msg:"Resource Type is not valid"});
+    if (!(resourceType === "application" || resourceType === "task")) {
+        return res.status(400).json({ msg: "Resource Type is not valid" });
     };
 
     try {
-        if(!fromAdmin){
+        if (!fromAdmin) {
             const commentorExists = await Employee.findById(commentorId);
-            if(!commentorExists) return res.status(404).json({msg:"Commentor doesn't exist"})
+            if (!commentorExists) return res.status(404).json({ msg: "Commentor doesn't exist" })
         }
 
-        if(resourceType === "application"){
+        if (resourceType === "application") {
             const applicationExists = await Application.findById(resourceId);
 
-            if(!applicationExists){
-                return res.status(400).json({msg:"Application doesn't exists"})
+            if (!applicationExists) {
+                return res.status(400).json({ msg: "Application doesn't exists" })
             }
         }
-        else if(resourceType === "task"){
+        else if (resourceType === "task") {
             const taskExists = await Task.findById(resourceId);
 
-            if(!taskExists){
-                return res.status(400).json({msg:"task doesn't exists"})
+            if (!taskExists) {
+                return res.status(400).json({ msg: "task doesn't exists" })
             }
         }
 
@@ -131,23 +131,23 @@ commentCtrl.AddComment = async(req,res)=>{
             resourceId: new ObjectId(resourceId),
             resourceType,
             commentorId: new ObjectId(commentorId),
-            comment:comment.trim(),
+            comment: comment.trim(),
             fromAdmin
         });
 
         const savedComment = await newComment.save();
         console.log(savedComment);
 
-        if(resourceType === "task"){
-            await Task.updateOne({_id:new ObjectId(resourceId)},
-                {$push:{comments:savedComment._id}}
+        if (resourceType === "task") {
+            await Task.updateOne({ _id: new ObjectId(resourceId) },
+                { $push: { comments: savedComment._id } }
             )
         }
 
-        res.status(200).json({data:savedComment, msg:"Comment Added"});
+        res.status(200).json({ data: savedComment, msg: "Comment Added" });
 
     } catch (error) {
-        res.status(500).json({msg:"Something went wrong"})
+        res.status(500).json({ msg: "Something went wrong" })
     }
 }
 

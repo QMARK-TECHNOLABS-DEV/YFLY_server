@@ -14,4 +14,7 @@ router.put("/change-password", authMiddleware, studentCtrl.ChangePassword);
 
 router.get("/get-application/:id", authMiddleware, studentCtrl.GetMyApplication)
 
+router.put("/deactivate/:id", authMiddleware, adminCheckMiddleware, studentCtrl.DeactivateStudent)
+
+
 module.exports = router;

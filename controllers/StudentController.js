@@ -7,65 +7,63 @@ const Application = require("../models/ApplicationModel");
 
 //Create Student;
 
-studentCtrl.CreateStudent = async(req,res)=>{
+studentCtrl.CreateStudent = async (req, res) => {
 
-    const {name,email,password,phone,
-        birthDate,age,qualification,
-        address,office} = req.body;
-        
+    const { name, email, password, phone,
+        birthDate, age, qualification,
+        address, office } = req.body;
+
     console.log(req.body);
     console.log("address", req.body.address);
 
-    let image;
-    if(req.file){
-        image = req.file.location
-    }
+    try {
 
-    if(!name || !email || !password){
-        return res.status(400).json({msg:"Invalid inputs"})
-    }
 
-    const nameRegex = /^[A-Za-z ]{3,}$/;
-    if(!nameRegex.test(name)) return res.status(400).json({ msg: "Invalid Name format" });
+        let image;
+        if (req.file) {
+            image = req.file.location
+        }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return res.status(400).json({ msg: "Invalid Email format" });
+        if (name) {
+            const nameRegex = /^[A-Za-z ]{3,}$/;
+            if (!nameRegex.test(name)) return res.status(400).json({ msg: "Invalid Name format" });
 
-    // const phoneNumberRegex = /^\d{10}$/;
-    // if(!phoneNumberRegex.test(phone)) return res.status(400).json({msg: "Invalid Phone number"});
+        }
 
-    const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
-    if(!passwordRegex.test(password)) return res.status(400).json({ msg: "Invalid password format" });
+        if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) return res.status(400).json({ msg: "Invalid Email format" });
 
-    const alreadyExists = await Student.findOne({email}).lean();
-    if(alreadyExists){
-        return res.status(400).json({msg:"Student already exists"})
-    }
+            const alreadyExists = await Student.findOne({ email }).lean();
+            if (alreadyExists) {
+                return res.status(400).json({ msg: "Student already exists" })
+            }
+        }
 
-    try{
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newDocument = new Student({
-            name,email,
-            password:hashedPassword,
-            phone,birthDate,age,
-            qualification,address,image,office
+            name, email,
+            password: hashedPassword,
+            phone, birthDate, age,
+            qualification, address, image, office
         });
 
         const savedDoc = await newDocument.save();
         console.log("Saved Student", savedDoc);
-        
-        res.status(200).json({msg:"New Student created"})
-    }catch(error){
+
+        res.status(200).json({ msg: "New Student created" })
+    } catch (error) {
         console.error(error);
-        res.status(500).json({msg:"Something went wrong"});
+        res.status(500).json({ msg: "Something went wrong" });
     }
 }
 
 //Get All Students;
 
-studentCtrl.GetAllStudents = async(req,res)=>{
+studentCtrl.GetAllStudents = async (req, res) => {
     const name = req.query.name;
     const email = req.query.email;
     const qualification = req.query.qualification;
@@ -77,156 +75,150 @@ studentCtrl.GetAllStudents = async(req,res)=>{
     const page = req.query.page;
     const entries = req.query.entries;
 
-    const ORArray = [{name:{ $regex: new RegExp(searchQuery,"i")}},
-    {email:{ $regex: new RegExp(searchQuery,"i")}},
-    {qualification:{ $regex: new RegExp(searchQuery,"i")}}];
+    const ORArray = [{ name: { $regex: new RegExp(searchQuery, "i") } },
+    { email: { $regex: new RegExp(searchQuery, "i") } },
+    { qualification: { $regex: new RegExp(searchQuery, "i") } }];
 
-    if(ObjectId.isValid(searchQuery)){
-        ORArray.push({_id:new ObjectId(searchQuery)}, {applicationId:new ObjectId(searchQuery)})
+    if (ObjectId.isValid(searchQuery)) {
+        ORArray.push({ _id: new ObjectId(searchQuery) }, { applicationId: new ObjectId(searchQuery) })
     }
 
     let filters = {
         $or: [...ORArray],
-        name : {$regex: new RegExp(name, "i")},
-        email : {$regex: new RegExp(email, "i")},
-        qualification : {$regex: new RegExp(qualification, "i")},
+        name: { $regex: new RegExp(name, "i") },
+        email: { $regex: new RegExp(email, "i") },
+        qualification: { $regex: new RegExp(qualification, "i") },
+        isActive: true,
     }
 
-    console.log("filters",filters)
+    console.log("filters", filters)
 
-    try{
-        const allStudents = await Student.find({...filters},{password:0});
+    try {
+        const allStudents = await Student.find({ ...filters }, { password: 0 });
         console.log(allStudents);
 
         let result;
 
-        if(page){
-            if(entries){
-                result = allStudents.slice(((page-1)*entries),(page*entries))
-            }else{
-                result = allStudents.slice(((page-1)*10),(page*10))
+        if (page) {
+            if (entries) {
+                result = allStudents.slice(((page - 1) * entries), (page * entries))
+            } else {
+                result = allStudents.slice(((page - 1) * 10), (page * 10))
             }
-        }else{
+        } else {
             result = allStudents;
         }
 
         res.status(200).json(result);
-    }catch(error){
+    } catch (error) {
         console.log(error)
-        res.status(500).json({msg:"Something went wrong"});
+        res.status(500).json({ msg: "Something went wrong" });
     }
 }
 
 //Get A Student;
 
-studentCtrl.GetStudent = async(req,res)=>{
+studentCtrl.GetStudent = async (req, res) => {
     const stdtId = req.params.id;
 
-    if(!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    try{
-        const student = await Student.findById(stdtId,{password:0});
+    try {
+        const student = await Student.findById(stdtId, { password: 0 });
         console.log(student);
 
-        if(!student) return res.status(404).json({msg:"Student not found"});
+        if (!student) return res.status(404).json({ msg: "Student not found" });
 
         res.status(200).json(student);
-    }catch(error){
-        res.status(500).json({msg:"Something went wrong"});
+    } catch (error) {
+        res.status(500).json({ msg: "Something went wrong" });
     }
 }
 
 //Update Student;
 
-studentCtrl.UpdateStudent = async(req,res)=>{
+studentCtrl.UpdateStudent = async (req, res) => {
     console.log(req.body);
     const stdtId = req.body.studentId;
 
-    if(!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))){
-        return res.status(400).json({msg:"Invalid Id format"});
-    }
-
-    const student = await Student.findById(stdtId);
-    if(!student) return res.status(404).json({msg:"Student not found"});
-
-    if(req.body.name){{
-        const nameRegex = /^[A-Za-z ]{3,}$/;
-        if(!nameRegex.test(req.body.name)) return res.status(400).json({ msg: "Invalid Name format" });
-    }}
-
-    if(req.body.email){
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(req.body.email)) return res.status(400).json({ msg: "Invalid Email format" });
-    }
-
-    if(req.body.phone){
-        const phoneNumberRegex = /^\d{10}$/;
-        if(!phoneNumberRegex.test(phone)) return res.status(400).json({msg: "Invalid Phone number"});
-    }
-
-    let {studentId, ...updates} = req.body;
-
-    if(req.file){
-        updates.image = req.file.location
-    }
-
-    if(req.body.password){
-        const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
-        if(!passwordRegex.test(req.body.password)) return res.status(400).json({ msg: "Invalid password format" });
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(req.body.password,salt);
-
-        updates.password = hashedPassword;
+    if (!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
     try {
-        console.log("updates",updates);
 
-        const updatedDocument = await Student.findByIdAndUpdate(stdtId,{
-            $set : updates
-        },{new:true});
-    
-        console.log("updatedDoc",updatedDocument)
-    
-        res.status(200).json({msg:"Student Updated"});
-        
+
+        const student = await Student.findById(stdtId);
+        if (!student) return res.status(404).json({ msg: "Student not found" });
+
+        if (req.body.name) {
+            {
+                const nameRegex = /^[A-Za-z ]{3,}$/;
+                if (!nameRegex.test(req.body.name)) return res.status(400).json({ msg: "Invalid Name format" });
+            }
+        }
+
+        if (req.body.email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(req.body.email)) return res.status(400).json({ msg: "Invalid Email format" });
+        }
+
+        let { studentId, ...updates } = req.body;
+
+        if (req.file) {
+            updates.image = req.file.location
+        }
+
+        if (req.body.password) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(req.body.password, salt);
+
+            updates.password = hashedPassword;
+        }
+
+        console.log("updates", updates);
+
+        const updatedDocument = await Student.findByIdAndUpdate(stdtId, {
+            $set: updates
+        }, { new: true });
+
+        console.log("updatedDoc", updatedDocument)
+
+        res.status(200).json({ msg: "Student Updated" });
+
     } catch (error) {
         console.log(error);
-        res.status(500).json({msg:"Something went wrong"});
+        res.status(500).json({ msg: "Something went wrong" });
     }
 }
 
 
 //Change Password; 
 
-studentCtrl.ChangePassword = async(req,res)=>{
+studentCtrl.ChangePassword = async (req, res) => {
     const stdtId = req.body.studentId;
     const password = req.body.password;
 
-    if(!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof stdtId === 'string' || ObjectId.isValid(stdtId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    const student = await Student.findById(stdtId);
-    if(!student) return res.status(404).json({msg:"Student not found"});
+    try {
+        const student = await Student.findById(stdtId);
+        if (!student) return res.status(404).json({ msg: "Student not found" });
 
-    const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
-    if(!passwordRegex.test(password)) return res.status(400).json({ msg: "Invalid password format" });
-
-    try{
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        await Student.findByIdAndUpdate(stdtId,{
-            $set: {password: hashedPassword}
+        await Student.findByIdAndUpdate(stdtId, {
+            $set: { password: hashedPassword }
         })
 
-        res.status(200).json({msg:"Password changed"});
-    }catch(error){
-        res.status(500).json({msg:"Something went wrong"})
+        res.status(200).json({ msg: "Password changed" });
+    } catch (error) {
+        res.status(500).json({ msg: "Something went wrong" })
     }
 }
 
@@ -278,16 +270,16 @@ studentCtrl.GetMyApplication = async (req, res) => {
             {
                 $project: {
                     _id: 1,
-                    studentId:1,
-                    program:1,
-                    intake:1,
-                    country:1,
-                    creator:1,
-                    status:1,
-                    assignee:1,
-                    documents:1,
-                    createdAt:1,
-                    updatedAt:1,
+                    studentId: 1,
+                    program: 1,
+                    intake: 1,
+                    country: 1,
+                    creator: 1,
+                    status: 1,
+                    assignee: 1,
+                    documents: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
                     studentName: "$student.name",
                     assignee: "$assignee.name",
                     steppers: 1
@@ -299,38 +291,58 @@ studentCtrl.GetMyApplication = async (req, res) => {
 
         const statusArray = [];
 
-        for(const stepper of resultArray[0].steppers){
+        for (const stepper of resultArray[0].steppers) {
             const checkObj = {};
             const minStatusArr = [];
 
-            for(const step of stepper.steps){
+            for (const step of stepper.steps) {
 
-                const relatives = stepper.steps.filter((elem)=> elem.groupStatus === step.groupStatus);
+                const relatives = stepper.steps.filter((elem) => elem.groupStatus === step.groupStatus);
 
-                checkObj[step.groupStatus] = relatives.every((elem)=> elem.status === "completed");
+                checkObj[step.groupStatus] = relatives.every((elem) => elem.status === "completed");
             }
 
 
-            for(const obj in checkObj){
-                if(checkObj[obj]){
-                    minStatusArr.push({[obj]:"completed"})
-                }else{
-                    minStatusArr.push({[obj]:"incomplete"})
+            for (const obj in checkObj) {
+                if (checkObj[obj]) {
+                    minStatusArr.push({ [obj]: "completed" })
+                } else {
+                    minStatusArr.push({ [obj]: "incomplete" })
 
                 }
             }
 
-            statusArray.push({university:stepper.university , partnership:stepper.partnership, arrayForMapping:minStatusArr})
+            statusArray.push({ university: stepper.university, partnership: stepper.partnership, arrayForMapping: minStatusArr })
 
         }
 
-        const {steppers, ...result} = resultArray[0];
+        const { steppers, ...result } = resultArray[0];
 
-        res.status(200).json({result, statusArray});
+        res.status(200).json({ result, statusArray });
     } catch (error) {
         res.status(500).json({ msg: "Something went wrong" });
     }
 };
 
+studentCtrl.DeactivateStudent = async (req, res) => {
+    const studentId = req.params.id;
+
+    if (!(typeof studentId === 'string' || ObjectId.isValid(studentId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
+    }
+
+    try {
+        const student = await Student.findById(studentId);
+        if (!student) return res.status(404).json({ msg: "Student not found" });
+
+        await Student.findByIdAndUpdate(studentId, {
+            $set: { isActive: false }
+        });
+
+        res.status(200).json({ msg: "Student deleted" })
+    } catch (error) {
+        res.status(500).json({ msg: "Something went wrong" })
+    }
+}
 
 module.exports = studentCtrl;

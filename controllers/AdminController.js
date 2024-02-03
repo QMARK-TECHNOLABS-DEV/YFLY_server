@@ -9,107 +9,108 @@ const ObjectId = mongoose.Types.ObjectId;
 const adminCtrl = {};
 
 // Get Details;
-adminCtrl.GetAdmin = async(req,res)=>{
+adminCtrl.GetAdmin = async (req, res) => {
     const adminId = req.params.id;
 
-    if(!(typeof adminId === 'string' || ObjectId.isValid(adminId))){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof adminId === 'string' || ObjectId.isValid(adminId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
     try {
-        const admin = await Admin.findById(adminId,{password:0});
+        const admin = await Admin.findById(adminId, { password: 0 });
         console.log(admin);
 
-        if(!admin) return res.status(404).json({msg:"Admin Not found"});
+        if (!admin) return res.status(404).json({ msg: "Admin Not found" });
 
         res.status(200).json(admin);
     } catch (error) {
-        res.status(500).json({msg:"Something went wrong"})
+        res.status(500).json({ msg: "Something went wrong" })
     }
 }
 
 // Update Admin;
-adminCtrl.UpdateAdmin = async(req,res)=>{
+adminCtrl.UpdateAdmin = async (req, res) => {
     console.log(req.body);
     const adminId = req.body.adminId;
 
-    if(!(typeof adminId === 'string' || ObjectId.isValid(adminId))){
-        return res.status(400).json({msg:"Invalid Id format"});
-    }
-
-    const admin = await Admin.findById(adminId);
-    if(!admin) return res.status(404).json({msg:"Admin not found"});
-
-    if(req.body.name){{
-        const nameRegex = /^[A-Za-z ]{3,}$/;
-        if(!nameRegex.test(req.body.name)) return res.status(400).json({ msg: "Invalid Name format" });
-    }}
-
-    if(req.body.email){
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(req.body.email)) return res.status(400).json({ msg: "Invalid Email format" });
-    }
-
-    if(req.body.password){
-        const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
-        if(!passwordRegex.test(req.body.password)) return res.status(400).json({ msg: "Invalid password format" });
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(req.body.password,salt);
-
-        req.body.password = hashedPassword;
+    if (!(typeof adminId === 'string' || ObjectId.isValid(adminId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
     try {
-        console.log("req.body",req.body);
 
-        const updatedDocument = await Admin.findByIdAndUpdate(adminId,{
-            $set : req.body
-        },{new:true});
-    
-        console.log("updatedDoc",updatedDocument)
-    
-        res.status(200).json({msg:"Admin Updated"});
-        
+
+        const admin = await Admin.findById(adminId);
+        if (!admin) return res.status(404).json({ msg: "Admin not found" });
+
+        if (req.body.name) {
+            {
+                const nameRegex = /^[A-Za-z ]{3,}$/;
+                if (!nameRegex.test(req.body.name)) return res.status(400).json({ msg: "Invalid Name format" });
+            }
+        }
+
+        if (req.body.email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(req.body.email)) return res.status(400).json({ msg: "Invalid Email format" });
+        }
+
+        if (req.body.password) {
+            const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
+            if (!passwordRegex.test(req.body.password)) return res.status(400).json({ msg: "Invalid password format" });
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(req.body.password, salt);
+
+            req.body.password = hashedPassword;
+        }
+
+        console.log("req.body", req.body);
+
+        const updatedDocument = await Admin.findByIdAndUpdate(adminId, {
+            $set: req.body
+        }, { new: true });
+
+        console.log("updatedDoc", updatedDocument)
+
+        res.status(200).json({ msg: "Admin Updated" });
+
     } catch (error) {
         console.log(error);
-        res.status(500).json({msg:"Something went wrong"});
+        res.status(500).json({ msg: "Something went wrong" });
     }
 }
 
 // Change password;
-adminCtrl.ChangePassword = async(req,res)=>{
+adminCtrl.ChangePassword = async (req, res) => {
     const adminId = req.body.adminId;
     const password = req.body.password;
 
-    if(!(typeof adminId === 'string' || ObjectId.isValid(adminId))){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof adminId === 'string' || ObjectId.isValid(adminId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    try{
+    try {
         const admin = await Admin.findById(adminId);
-        if(!admin) return res.status(404).json({msg:"Admin not found"});
-
-        const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
-        if(!passwordRegex.test(password)) return res.status(400).json({ msg: "Invalid password format" });
+        if (!admin) return res.status(404).json({ msg: "Admin not found" });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        await Admin.findByIdAndUpdate(adminId,{
-            $set: {password: hashedPassword}
+        await Admin.findByIdAndUpdate(adminId, {
+            $set: { password: hashedPassword }
         })
 
-        res.status(200).json({msg:"Password changed"});
-    }catch(error){
-        res.status(500).json({msg:"Something went wrong"})
+        res.status(200).json({ msg: "Password changed" });
+    } catch (error) {
+        res.status(500).json({ msg: "Something went wrong" })
     }
 }
 
 // Get Application Metrics ==>Count of Application (All, Current, Completed, Cancelled), Non-enrollments, Deferrals;
 // Filters ==> Country, Intake, Date , Year.
 
-adminCtrl.GetApplicationMetrics = async(req,res)=>{
+adminCtrl.GetApplicationMetrics = async (req, res) => {
     const country = req.query.country;
     const intake = req.query.intake;
     const startDateQuery = req.query.start_date;
@@ -118,21 +119,21 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
 
     let filters = {};
 
-    if(country){filters.country = {$regex : new RegExp(country, 'i')}};
+    if (country) { filters.country = { $regex: new RegExp(country, 'i') } };
 
-    if(intake){filters.intake = {$regex : new RegExp(intake, 'i')}};
+    if (intake) { filters.intake = { $regex: new RegExp(intake, 'i') } };
 
-    if(startDateQuery && endDateQuery){
+    if (startDateQuery && endDateQuery) {
         const startDate = new Date(`${startDateQuery}T00:00:00.000+05:30`);
         const endDate = new Date(`${endDateQuery}T00:00:00.000+05:30`);
-        filters.createdAt = {$gte:startDate, $lte:endDate}
+        filters.createdAt = { $gte: startDate, $lte: endDate }
     };
 
-    if(year){
+    if (year) {
         const yearStart = new Date(`${year}-01-01T00:00:00.000+05:30`);
         const yearEnd = new Date(`${parseInt(year) + 1}-01-01T00:00:00.000+05:30`);
 
-        filters.createdAt = {$gte:yearStart, $lt:yearEnd};
+        filters.createdAt = { $gte: yearStart, $lt: yearEnd };
     };
 
     console.log(filters);
@@ -141,37 +142,37 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
         const allApplications = await Application.find(filters).countDocuments();
         console.log("all", allApplications);
 
-        const pendingApplications = await Application.find({...filters, status: "pending"}).countDocuments();
+        const pendingApplications = await Application.find({ ...filters, status: "pending" }).countDocuments();
         console.log("processing", pendingApplications);
 
-        const ongoingApplications = await Application.find({...filters, status: "ongoing"}).countDocuments();
+        const ongoingApplications = await Application.find({ ...filters, status: "ongoing" }).countDocuments();
         console.log("processing", ongoingApplications);
 
-        const completedApplications = await Application.find({...filters, status: "completed"}).countDocuments();
+        const completedApplications = await Application.find({ ...filters, status: "completed" }).countDocuments();
         console.log("completed", completedApplications);
 
-        const defferredApplications = await Application.find({...filters, status: "deffered"}).countDocuments();
+        const defferredApplications = await Application.find({ ...filters, status: "deffered" }).countDocuments();
         console.log("deffered", defferredApplications);
 
-        const cancelledApplications = await Application.find({...filters, status: "cancelled"}).countDocuments();
-        console.log("cancelled",cancelledApplications);
+        const cancelledApplications = await Application.find({ ...filters, status: "cancelled" }).countDocuments();
+        console.log("cancelled", cancelledApplications);
 
-        const notEnrolledApplications = await Application.find({...filters, status: "not-enrolled"}).countDocuments();
-        console.log("not-enrolled",notEnrolledApplications);
+        const notEnrolledApplications = await Application.find({ ...filters, status: "not-enrolled" }).countDocuments();
+        console.log("not-enrolled", notEnrolledApplications);
 
 
         res.status(200).json([
-            {name: "All",value:allApplications}, 
-            {name:"Pending",value:pendingApplications},
-            {name:"On-going",value:ongoingApplications},
-            {name:"Completed",value:completedApplications},
-            {name:"Deffered",value:defferredApplications},
-            {name:"Cancelled",value:cancelledApplications},
-            {name:"Non-enrolled",value:notEnrolledApplications},
+            { name: "All", value: allApplications },
+            { name: "Pending", value: pendingApplications },
+            { name: "On-going", value: ongoingApplications },
+            { name: "Completed", value: completedApplications },
+            { name: "Deffered", value: defferredApplications },
+            { name: "Cancelled", value: cancelledApplications },
+            { name: "Non-enrolled", value: notEnrolledApplications },
         ])
 
     } catch (error) {
-        res.status(500).json({msg:"Something went wrong"})
+        res.status(500).json({ msg: "Something went wrong" })
     }
 }
 
@@ -179,55 +180,55 @@ adminCtrl.GetApplicationMetrics = async(req,res)=>{
 // Assign work to an Employee; 
 // ** warning: same work can be assigned many times;
 
-adminCtrl.WorkAssign = async(req,res)=>{
-    const {applicationId, employeeId,stepperId, stepNumber} = req.body;
+adminCtrl.WorkAssign = async (req, res) => {
+    const { applicationId, employeeId, stepperId, stepNumber } = req.body;
 
-    console.log(applicationId, employeeId,stepperId, stepNumber)
+    console.log(applicationId, employeeId, stepperId, stepNumber)
 
-    if(!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof applicationId === 'string' || ObjectId.isValid(applicationId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     };
 
-    if(!(typeof employeeId === 'string' || ObjectId.isValid(employeeId))){
-        return res.status(400).json({msg:"Invalid Id format"});
+    if (!(typeof employeeId === 'string' || ObjectId.isValid(employeeId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
     };
 
     try {
         const application = await Application.findById(applicationId);
-        if(!application) return res.status(404).json({msg:"Application not found"});
+        if (!application) return res.status(404).json({ msg: "Application not found" });
 
         const employee = await Employee.findById(employeeId);
-        if(!employee) return res.status(404).json({msg:"Employee not found"});
+        if (!employee) return res.status(404).json({ msg: "Employee not found" });
 
         //Update the assignee and status in that particular step
-        
-        const modifiedStepper =  await Stepper.findOneAndUpdate({_id:new ObjectId(stepperId), steps:{$elemMatch:{_id:stepNumber}}},
-            {$set:{'steps.$.assignee':employee._id,'steps.$.status':"pending"}}, {new:true}
-            );
+
+        const modifiedStepper = await Stepper.findOneAndUpdate({ _id: new ObjectId(stepperId), steps: { $elemMatch: { _id: stepNumber } } },
+            { $set: { 'steps.$.assignee': employee._id, 'steps.$.status': "pending" } }, { new: true }
+        );
 
 
         const newWork = new Work({
-            applicationId:application._id,
+            applicationId: application._id,
             stepperId: new ObjectId(stepperId),
-            studentId:application.studentId,
-            assignee:employee._id,
+            studentId: application.studentId,
+            assignee: employee._id,
             stepNumber,
-            stepStatus:"pending"
+            stepStatus: "pending"
         })
 
-        console.log("newWork",newWork)
+        console.log("newWork", newWork)
 
         const savedWork = await newWork.save();
 
-        await Employee.findByIdAndUpdate(employeeId,{
-            $push:{currentWorks: savedWork._id} 
+        await Employee.findByIdAndUpdate(employeeId, {
+            $push: { currentWorks: savedWork._id }
         });
 
 
-        res.status(200).json({msg:"Work Assigned",modifiedStepper})
+        res.status(200).json({ msg: "Work Assigned", modifiedStepper })
     } catch (error) {
-        res.status(500).json({msg:"Something went Wrong"})
-        
+        res.status(500).json({ msg: "Something went Wrong" })
+
     }
 }
 
