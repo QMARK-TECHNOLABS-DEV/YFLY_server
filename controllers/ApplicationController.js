@@ -152,7 +152,11 @@ applicationCtrl.GetAllApplications = async (req, res) => {
     const intake = req.query.intake;
     const startDateQuery = req.query.start_date;
     const endDateQuery = req.query.end_date;
-    const status = req.query.status;
+    
+    let status 
+    if(req.query.status){
+        status = decodeURIComponent(req.query.status);
+    }
 
     //search query;
     const searchQuery = req.query.search;
@@ -179,7 +183,9 @@ applicationCtrl.GetAllApplications = async (req, res) => {
 
     if (intake) { filters.intake = { $regex: new RegExp(intake, 'i') } };
 
-    if (status) { filters.status = { $regex: new RegExp(status, 'i') } };
+    // if (status) { filters.status = { $regex: new RegExp(status, 'i') } };
+    
+    if (status) { filters.statuses =  status  };
 
     if (startDateQuery && endDateQuery) {
         const startDate = new Date(`${startDateQuery}T00:00:00.000+05:30`);
@@ -239,7 +245,7 @@ applicationCtrl.GetAllApplications = async (req, res) => {
                     "creator": 1,
                     "steppers": 1,
                     "documents": 1,
-                    "status": 1,
+                    "statuses": 1,
                     "createdAt": 1,
                     "updatedAt": 1,
                     "assignee": 1,
@@ -324,7 +330,7 @@ applicationCtrl.GetApplication = async (req, res) => {
                     intake: 1,
                     country: 1,
                     creator: 1,
-                    status: 1,
+                    statuses: 1,
                     assignee: 1,
                     documents: 1,
                     createdAt: 1,

@@ -14,10 +14,13 @@ const ApplicationSchema = new mongoose.Schema({
                         }
                     ],
          default:[]},
-    status:{type:String,
-            default:"pending",
-            enum:["pending", "ongoing", "completed", "enrolled", "cancelled", "deffered", "not-enrolled"]
+    statuses:{type:Array,
+            default:[],
            },
+    // status:{type:String,
+    //         default:"pending",
+    //         enum:["pending", "ongoing", "completed", "enrolled", "cancelled", "deffered", "not-enrolled"]
+    //        },
     assignee:{type:mongoose.Types.ObjectId},
  
 },{timestamps:true});
