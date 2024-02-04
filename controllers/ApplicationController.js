@@ -407,9 +407,7 @@ applicationCtrl.DeleteApplication = async (req, res) => {
                     $set: {applicationId : null}
                 })
 
-                await Work.updateMany({ applicationId: application._id },{
-                    $set: {applicationId : null}
-                });
+                await Work.deleteMany({ applicationId: application._id });
                 
             })
             .catch((error) => {
