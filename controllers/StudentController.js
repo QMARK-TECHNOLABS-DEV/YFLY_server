@@ -86,7 +86,6 @@ studentCtrl.GetAllStudents = async (req, res) => {
     let filters = {
         $or: [...ORArray],
         name: { $regex: new RegExp(name, "i") },
-        email: { $regex: new RegExp(email, "i") },
         qualification: { $regex: new RegExp(qualification, "i") },
         isActive: true,
     }
@@ -97,17 +96,16 @@ studentCtrl.GetAllStudents = async (req, res) => {
         const allStudents = await Student.find({ ...filters }, { password: 0 });
         console.log(allStudents);
 
-        let result;
+        let result = allStudents.reverse();
 
         if (page) {
             if (entries) {
-                result = allStudents.slice(((page - 1) * entries), (page * entries))
+                result = result.slice(((page - 1) * entries), (page * entries))
             } else {
-                result = allStudents.slice(((page - 1) * 10), (page * 10))
+                result = result.slice(((page - 1) * 10), (page * 10))
             }
-        } else {
-            result = allStudents;
-        }
+        } 
+        
 
         res.status(200).json(result);
     } catch (error) {

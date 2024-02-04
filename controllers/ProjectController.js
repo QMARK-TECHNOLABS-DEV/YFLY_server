@@ -85,17 +85,16 @@ projectCtrl.GetAllProjects = async (req, res) => {
             }
         ])
 
-        let result;
+        let result = allProjects.reverse();
 
         if (page) {
             if (entries) {
-                result = allProjects.slice(((page - 1) * entries), (page * entries))
+                result = result.slice(((page - 1) * entries), (page * entries))
             } else {
-                result = allProjects.slice(((page - 1) * 10), (page * 10))
+                result = result.slice(((page - 1) * 10), (page * 10))
             }
-        } else {
-            result = allProjects;
-        }
+        } 
+        
 
         res.status(200).json(result);
     } catch (error) {
@@ -358,7 +357,7 @@ projectCtrl.GetAllTasksOfAProject = async (req, res) => {
         ]);
 
 
-        res.status(200).json(taskArray)
+        res.status(200).json(taskArray.reverse())
     } catch (error) {
         res.status(500).json({ msg: "Something went wrong" })
     }

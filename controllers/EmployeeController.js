@@ -340,7 +340,7 @@ employeeCtrl.RetrieveWorks = async (req, res) => {
 
         console.log("result", result)
 
-        res.status(200).json(result)
+        res.status(200).json(result.reverse())
 
     } catch (error) {
         res.status(500).json({ msg: "Something went wrong" })
@@ -421,7 +421,7 @@ employeeCtrl.GetMyProjectTasks = async (req, res) => {
 
         ])
 
-        res.status(200).json(result)
+        res.status(200).json(result.reverse())
 
     } catch (error) {
         res.status(500).json({ msg: "Something went wrong" })

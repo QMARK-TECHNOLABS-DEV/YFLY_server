@@ -254,17 +254,16 @@ applicationCtrl.GetAllApplications = async (req, res) => {
 
         console.log("all-applications", allApplications);
 
-        let result;
+        let result = allApplications.reverse();
 
         if (page) {
             if (entries) {
-                result = allApplications.slice(((page - 1) * entries), (page * entries))
+                result = result.slice(((page - 1) * entries), (page * entries))
             } else {
-                result = allApplications.slice(((page - 1) * 10), (page * 10))
+                result = result.slice(((page - 1) * 10), (page * 10))
             }
-        } else {
-            result = allApplications;
-        }
+        } 
+       
 
         res.status(200).json(result);
     } catch (error) {
@@ -402,6 +401,16 @@ applicationCtrl.DeleteApplication = async (req, res) => {
                 await Employee.findByIdAndUpdate(application.assignee, {
                     $pull: { currentWorks: { $in: idsOfworks } }
                 });
+
+                // Remove applicationId from Student and related works or delete the works
+                await Student.findByIdAndUpdate(application.studentId,{
+                    $set: {applicationId : null}
+                })
+
+                await Work.updateMany({ applicationId: application._id },{
+                    $set: {applicationId : null}
+                });
+                
             })
             .catch((error) => {
                 console.log(error)
