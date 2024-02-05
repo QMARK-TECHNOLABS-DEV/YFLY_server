@@ -11,8 +11,7 @@ const stepCtrl = {}
 
 // Create a Step;
 stepCtrl.CreateAStepper = async (req, res) => {
-    const { applicationId,intake, program, university, partnership, assignee } = req.body;
-
+    const { applicationId, intake, program, university, partnership, assignee } = req.body;
 
     try {
 
@@ -173,76 +172,6 @@ stepCtrl.GetAllSteppers = async (req, res) => {
 
 
 // Update Steps Note: Here if assignee is not present in a step on updation 
-// stepCtrl.updateStepper = async (req, res) => {
-//     const { stepperId, stepNumber, stepStatus, stepAssignee } = req.body;
-
-//     if (!(typeof stepperId === 'string' || ObjectId.isValid(stepperId))) {
-//         return res.status(400).json({ msg: "Invalid Id format" });
-//     }
-
-//     try {
-//         let stepperDoc = await Stepper.findById(stepperId);
-//         console.log(stepperDoc);
-//         if (!stepperDoc) return res.status(404).json({ msg: "Step Document not found" });
-
-//         const application = await Application.findById(stepperDoc.applicationId)
-//         if (!application) return res.status(404).json({ msg: "Application not found" })
-
-//         const assigneeExists = stepperDoc.steps.find((step) => step._id === stepNumber && step.assignee !== undefined)
-//         if (!assigneeExists) return res.status(404).json({ msg: "Cannot update before assigning" })
-
-//         if (stepNumber) {
-//             if (stepStatus) {
-
-//                 stepperDoc = await Stepper.findOneAndUpdate({ _id: stepperId, 'steps': { $elemMatch: { _id: stepNumber } } },
-//                     { $set: { 'steps.$.status': stepStatus } }, { new: true }
-//                 )
-//             }
-
-//         }
-
-//         await Work.findOneAndUpdate({
-//             applicationId: application._id,
-//             stepperId: new ObjectId(stepperId),
-//             assignee: new ObjectId(stepAssignee), stepNumber
-//         },
-//             { $set: { stepStatus: stepStatus } }
-//         );
-
-//         // Update the Application's Status to Ongoing whenever stepStatus is Ongoing;
-//         if (application.status === "pending" && stepStatus === "ongoing") {
-//             await Application.findByIdAndUpdate(application._id, {
-//                 $set: { status: "ongoing" }
-//             })
-//         }
-
-//         // If all of the steppers gets completed, the application status will be completed
-//         if (stepperDoc?.steps?.length === stepNumber && stepStatus === "completed") {
-
-//             const allSteppers = await Stepper.find({ applicationId: application._id });
-
-//             const isAllCompleted = allSteppers.every((stepper) => {
-//                 const stepperLength = stepper?.steps?.length;
-//                 const lastStatus = stepper?.steps[stepperLength - 1]?.status;
-//                 if (lastStatus === "completed") {
-//                     return true
-//                 } else {
-//                     return false;
-//                 }
-//             })
-
-//             if (isAllCompleted) {
-//                 await Application.findByIdAndUpdate(application._id, {
-//                     $set: { status: "completed" }
-//                 })
-//             }
-//         }
-
-//         res.status(200).json(stepperDoc)
-//     } catch (error) {
-//         res.status(500).json({ msg: "Something went wrong" })
-//     }
-// }
 
 stepCtrl.updateStepper = async (req, res) => {
     const { stepperId, stepNumber, stepStatus, stepAssignee } = req.body;
@@ -297,8 +226,6 @@ stepCtrl.updateStepper = async (req, res) => {
         );
 
 
-
-
         res.status(200).json(stepperDoc)
     } catch (error) {
         res.status(500).json({ msg: "Something went wrong" })
@@ -343,5 +270,3 @@ stepCtrl.DeleteAStepper = async (req, res) => {
 }
 
 module.exports = stepCtrl;
-
-// Should add Intake along with Program

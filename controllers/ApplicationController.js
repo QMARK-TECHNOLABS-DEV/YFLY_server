@@ -31,8 +31,6 @@ applicationCtrl.CreateApplication = async (req, res) => {
     const { studentId, uniBased,
              country, creator, assignee } = req.body;
 
-    console.log("reqBody", req.body);
-
     if (!(typeof studentId === 'string' || ObjectId.isValid(studentId))) {
         return res.status(400).json({ msg: "Invalid Id format" });
     }

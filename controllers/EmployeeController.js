@@ -488,5 +488,3 @@ employeeCtrl.WorkAssign = async (req, res) => {
 
 
 module.exports = employeeCtrl;
-
-// intake present
