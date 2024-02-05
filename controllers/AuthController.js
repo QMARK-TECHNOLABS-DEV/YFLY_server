@@ -1,7 +1,6 @@
 const Admin = require("../models/AdminModel")
 const Employee = require("../models/EmployeeModel")
 const Student = require("../models/StudentModel");
-const OtpModel = require("../models/OtpModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -11,19 +10,6 @@ const { maxAgeAccessCookie, maxAgeRefreshCookie,
     generateAccessToken, generateRefreshToken } = require("../middlewares/tokenMiddlewares");
 const authCtrl = {};
 
-
-//Create OTP
-const generateOTP = () => {
-    const digits = "0123456789";
-
-    let otp = "";
-
-    for (let i = 0; i < 6; i++) {
-        otp += digits[Math.floor(Math.random() * 10)]
-    }
-
-    return otp;
-}
 
 // Authentication method for Admin/Employee/Student;
 authCtrl.Login = async (req, res) => {
@@ -101,91 +87,5 @@ authCtrl.Logout = async (req, res) => {
     res.sendStatus(204)
 }
 
-//Sent OTPs to The Mail id
-authCtrl.SendOTP = async (req, res) => {
-    const email = req.body.email;
-    console.log(email)
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return res.status(400).json({ msg: "Invalid Email format" });
-
-    const student = await Student.findOne({ email }).lean();
-    const employee = await Employee.findOne({ email }).lean();
-
-    if (!student && !employee) {
-        return res.status(404).json({ msg: "You are not registered with us" })
-    }
-
-    const otpExisting = await OtpModel.findOne({ email })
-    if (otpExisting) {
-        await OtpModel.findByIdAndDelete(otpExisting._id);
-    }
-
-    try {
-        const OTP = generateOTP();
-
-        const otpDoc = new OtpModel({ email, otp: OTP })
-        await otpDoc.save();
-
-        const transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
-            auth: {
-                user: process.env.MAIL_USER,
-                pass: process.env.MAIL_PASSWORD
-            }
-        });
-
-        const mailOptions = {
-            from: process.env.MAIL_USER,
-            to: email,
-            subject: "OTP to Change Password",
-            text: OTP
-        };
-
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.log(error);
-                return res.status(500).json({ msg: "Couldn't Sent OTP " });
-            } else {
-                console.log('Email sent: ' + info.response);
-                return res.status(200).json({ msg: "OTP Sent Successfully" })
-            }
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: 'Something went wrong' })
-    }
-}
-
-
-//Verify Email id;
-authCtrl.VerifyMail = async (req, res) => {
-    const otp = req.body.otp;
-    const email = req.body.email;
-
-    if (typeof otp !== 'string') return res.status(400).json({ msg: "Invalid OTP format" })
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return res.status(400).json({ msg: "Invalid Email format" });
-
-    try {
-        const validOtp = await OtpModel.findOne({ email, otp });
-
-        if (!validOtp) {
-            return res.status(403).json({ msg: 'Invalid Otp number' })
-        }
-
-        await OtpModel.findByIdAndDelete(validOtp._id)
-
-        res.status(200).json({ msg: "Email verified" });
-
-    } catch (error) {
-        res.status(500).json({ msg: "Something went wrong" });
-
-    }
-}
 
 module.exports = authCtrl;
