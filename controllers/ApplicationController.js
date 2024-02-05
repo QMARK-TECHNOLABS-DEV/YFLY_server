@@ -52,10 +52,6 @@ applicationCtrl.CreateApplication = async (req, res) => {
         assignees: [new ObjectId(assignee)],
     }
 
-    // if (assignee) {
-    //     schemaObject.assignee = new ObjectId(assignee)
-    // }
-
     try {
         const student = await Student.findById(studentId);
         console.log(student)
@@ -271,11 +267,11 @@ applicationCtrl.GetAllApplications = async (req, res) => {
                 }
             },
             {
-                $sort:{createdAt: -1}
+                $sort: { createdAt: -1 }
             }
 
         ]);
-        
+
 
         console.log("all-applications", allApplications);
 
@@ -412,6 +408,8 @@ applicationCtrl.DeleteApplication = async (req, res) => {
         const application = await Application.findById(applicationId);
         if (!application) return res.status(404).json({ msg: "Application doesn't exist" });
 
+        const assigneesArray = application?.assignees;
+
         await Application.findByIdAndDelete(applicationId)
             .then(async () => {
 
@@ -423,9 +421,11 @@ applicationCtrl.DeleteApplication = async (req, res) => {
 
                 const idsOfworks = relatedWorks.map((work) => work._id)
 
-                await Employee.findByIdAndUpdate(application.assignee, {
-                    $pull: { currentWorks: { $in: idsOfworks } }
-                });
+                for (const assignee of assigneesArray) {
+                    await Employee.findByIdAndUpdate(assignee, {
+                        $pull: { currentWorks: { $in: idsOfworks } }
+                    });
+                }
 
                 // Remove applicationId from Student and related works or delete the works
                 await Student.findByIdAndUpdate(application.studentId, {
@@ -713,4 +713,3 @@ applicationCtrl.PhaseChange = async (req, res) => {
 
 
 module.exports = applicationCtrl;
-// assignee statuses
