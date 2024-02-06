@@ -18,7 +18,9 @@ employeeCtrl.CreateEmployee = async (req, res) => {
         department, birthDate, address, office } = req.body;
 
     console.log("req.body", req.body);
-    console.log("req.file", req.file)
+    console.log("req.file", req.file);
+
+    if (!department) return res.status(400).json({ msg: "Invalid Department" });
 
     try {
 
@@ -456,14 +458,14 @@ employeeCtrl.WorkAssign = async (req, res) => {
 
         const applicationStatus = modifiedStepper?.steps[stepNumber - 1]?.name;
 
-        if(application?.assignees?.includes(employee._id)){
+        if (application?.assignees?.includes(employee._id)) {
             await Application.findByIdAndUpdate(application._id, {
                 $push: { statuses: applicationStatus }
             })
-            
-        }else{
+
+        } else {
             await Application.findByIdAndUpdate(application._id, {
-                $push: { statuses: applicationStatus , assignees: employee._id}
+                $push: { statuses: applicationStatus, assignees: employee._id }
             })
 
         }
