@@ -35,7 +35,7 @@ applicationCtrl.CreateApplication = async (req, res) => {
         return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    //typeof uniBased = [{intake,program,university,partnership}] 
+    //typeof uniBased = [{through,intake,program,university,partnership}] 
 
     let steppers = [];
     let statuses = [];
@@ -96,6 +96,7 @@ applicationCtrl.CreateApplication = async (req, res) => {
 
             const newStepper = new Stepper({
                 applicationId: application._id,
+                through: obj.through,
                 intake: obj.intake,
                 program: obj.program,
                 university: obj.university,

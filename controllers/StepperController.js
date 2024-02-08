@@ -11,7 +11,7 @@ const stepCtrl = {}
 
 // Create a Step;
 stepCtrl.CreateAStepper = async (req, res) => {
-    const { applicationId, intake, program, university, partnership, assignee } = req.body;
+    const { applicationId, through, intake, program, university, partnership, assignee } = req.body;
 
     try {
 
@@ -41,6 +41,7 @@ stepCtrl.CreateAStepper = async (req, res) => {
 
         const newStepper = new Stepper({
             applicationId: new ObjectId(applicationId),
+            through,
             intake,
             program,
             university,
@@ -64,18 +65,18 @@ stepCtrl.CreateAStepper = async (req, res) => {
             const savedWork = await newWork.save();
 
             await Employee.findByIdAndUpdate(assignee, {
-                $push: { currentWorks: savedWork._id}
+                $push: { currentWorks: savedWork._id }
             });
         }
 
-        if(application?.assignees?.includes(new ObjectId(assignee))){
+        if (application?.assignees?.includes(new ObjectId(assignee))) {
             await Application.findByIdAndUpdate(savedStepper.applicationId, {
-                $push: { steppers: savedStepper._id , intakes: intake, statuses: savedStepper?.steps[0]?.name }
+                $push: { steppers: savedStepper._id, intakes: intake, statuses: savedStepper?.steps[0]?.name }
             })
 
-        }else{
+        } else {
             await Application.findByIdAndUpdate(savedStepper.applicationId, {
-                $push: { steppers: savedStepper._id , intakes: intake, statuses: savedStepper?.steps[0]?.name, assignees: new ObjectId(assignee) }
+                $push: { steppers: savedStepper._id, intakes: intake, statuses: savedStepper?.steps[0]?.name, assignees: new ObjectId(assignee) }
             })
 
         }
@@ -132,6 +133,7 @@ stepCtrl.GetSingleStepper = async (req, res) => {
                 $group: {
                     _id: "$_id",
                     applicationId: { $first: "$applicationId" },
+                    through: { $first: "$through" },
                     intake: { $first: "$intake" },
                     program: { $first: "$program" },
                     university: { $first: "$university" },
@@ -220,12 +222,12 @@ stepCtrl.updateStepper = async (req, res) => {
 
                 if (stepStatus === "completed") {
                     const oldArray = application?.statuses
-                    const index = oldArray?.findIndex((status)=> status === applicationStatus)
-                    const newStatuses = oldArray?.filter((status, i)=> i !== index)
+                    const index = oldArray?.findIndex((status) => status === applicationStatus)
+                    const newStatuses = oldArray?.filter((status, i) => i !== index)
 
                     await Application.findByIdAndUpdate(application._id, {
-                        $pull: {  assignees: currentAssignee },
-                        $set:{statuses: newStatuses }
+                        $pull: { assignees: currentAssignee },
+                        $set: { statuses: newStatuses }
                     })
                 }
             }
@@ -235,7 +237,7 @@ stepCtrl.updateStepper = async (req, res) => {
         await Work.findOneAndUpdate({
             applicationId: application._id,
             stepperId: new ObjectId(stepperId),
-            assignee: new ObjectId(stepAssignee), 
+            assignee: new ObjectId(stepAssignee),
             stepNumber
         },
             { $set: { stepStatus: stepStatus } }
