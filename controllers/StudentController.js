@@ -65,7 +65,7 @@ studentCtrl.CreateStudent = async (req, res) => {
 
 studentCtrl.GetAllStudents = async (req, res) => {
     const name = req.query.name;
-    const email = req.query.email;
+    const office = req.query.office;
     const qualification = req.query.qualification;
 
     //search query;
@@ -86,6 +86,7 @@ studentCtrl.GetAllStudents = async (req, res) => {
     let filters = {
         $or: [...ORArray],
         name: { $regex: new RegExp(name, "i") },
+        office: { $regex: new RegExp(office, "i") },
         qualification: { $regex: new RegExp(qualification, "i") },
         isActive: true,
     }
@@ -340,4 +341,4 @@ studentCtrl.DeactivateStudent = async (req, res) => {
 }
 
 module.exports = studentCtrl;
-// assignee 
+ 

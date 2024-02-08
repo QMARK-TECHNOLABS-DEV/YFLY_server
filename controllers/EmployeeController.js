@@ -263,11 +263,11 @@ employeeCtrl.RetrieveWorks = async (req, res) => {
         const employee = await Employee.findById(employeeId);
         if (!employee) return res.status(404).json({ msg: "Employee Not Found" });
 
-        const currentWorks = employee.currentWorks;
+        // const currentWorks = employee.currentWorks;
 
         const result = await Work.aggregate([
             {
-                $match: { _id: { $in: [...currentWorks] } }
+                $match: { assignee: new ObjectId(employeeId) , stepStatus: {$ne : "completed"} }
             },
             {
                 $lookup: {
@@ -391,10 +391,10 @@ employeeCtrl.GetMyProjectTasks = async (req, res) => {
         const employee = await Employee.findById(employeeId);
         if (!employee) return res.status(404).json({ msg: "Employee Not Found" });
 
-        const currentWorks = employee.currentWorks;
+        const currentTasks = employee.currentTasks;
 
         const result = await Task.aggregate([
-            { $match: { _id: { $in: [...currentWorks] } } },
+            { $match: { _id: { $in: [...currentTasks] } } },
             {
                 $lookup: {
                     from: "comments",
@@ -499,3 +499,4 @@ employeeCtrl.WorkAssign = async (req, res) => {
 
 
 module.exports = employeeCtrl;
+// currentWorks
