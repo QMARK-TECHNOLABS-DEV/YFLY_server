@@ -443,11 +443,26 @@ employeeCtrl.WorkAssign = async (req, res) => {
     };
 
     try {
+        // Check if work already exists;
+        const existWork = await Work.findOne({
+            applicationId: new ObjectId(applicationId),
+            stepperId: new ObjectId(stepperId),
+            assignee: new ObjectId(employeeId),
+            stepNumber,
+        })
+
+        if(existWork) return res.status(400).json({msg:"Already Assigned"})
+
+
         const application = await Application.findById(applicationId);
         if (!application) return res.status(404).json({ msg: "Application not found" });
 
         const employee = await Employee.findById(employeeId);
         if (!employee) return res.status(404).json({ msg: "Employee not found" });
+
+
+        
+    
 
         //Update the assignee and status in that particular step
 
