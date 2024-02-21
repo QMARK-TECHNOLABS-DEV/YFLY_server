@@ -2,6 +2,7 @@ const Student = require("../models/StudentModel")
 const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
+const isValidObjectId = mongoose.isValidObjectId
 const studentCtrl = {};
 const Application = require("../models/ApplicationModel");
 
@@ -318,6 +319,25 @@ studentCtrl.GetMyApplication = async (req, res) => {
         res.status(500).json({ msg: "Something went wrong" });
     }
 };
+
+
+studentCtrl.GetAllOfMyApplications = async (req, res) => {
+    const studentId = req.params.id;
+
+    if (!(isValidObjectId(studentId))) {
+        return res.status(400).json({ msg: "Invalid Id format" });
+    }
+
+    try {
+
+        const resultArray = await Application.find({studentId: new ObjectId(studentId)})
+
+        res.status(200).json(resultArray.reverse());
+    } catch (error) {
+        res.status(500).json({ msg: "Something went wrong" });
+    }
+};
+
 
 studentCtrl.DeactivateStudent = async (req, res) => {
     const studentId = req.params.id;

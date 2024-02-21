@@ -14,6 +14,8 @@ router.put("/change-password", authMiddleware, studentCtrl.ChangePassword);
 
 router.get("/get-application/:id", authMiddleware, studentCtrl.GetMyApplication)
 
+router.get("/get-my-applications/:id", authMiddleware, studentCtrl.GetAllOfMyApplications)
+
 router.put("/deactivate/:id", authMiddleware, adminCheckMiddleware, studentCtrl.DeactivateStudent)
 
 

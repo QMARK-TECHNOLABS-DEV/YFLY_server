@@ -57,9 +57,6 @@ applicationCtrl.CreateApplication = async (req, res) => {
         console.log(student)
         if (!student) return res.status(404).json({ msg: "Student not found" });
 
-        const alreadyExists = await Application.findOne({ studentId: new ObjectId(studentId) });
-        if (alreadyExists) return res.status(400).json({ msg: "Application already exists" });
-
         const newDocument = new Application(schemaObject);
 
         const application = await newDocument.save();
@@ -133,10 +130,6 @@ applicationCtrl.CreateApplication = async (req, res) => {
 
         await Application.findByIdAndUpdate(application._id, {
             $set: { steppers: steppers, statuses: statuses, intakes: intakes },
-        })
-
-        await Student.findByIdAndUpdate(studentId, {
-            $set: { applicationId: application._id }
         })
 
         res.status(200).json({ msg: "New Application Created" })
@@ -410,7 +403,7 @@ applicationCtrl.DeleteApplication = async (req, res) => {
         const application = await Application.findById(applicationId);
         if (!application) return res.status(404).json({ msg: "Application doesn't exist" });
 
-        const assigneesArray = application?.assignees;
+        // const assigneesArray = application?.assignees;
 
         await Application.findByIdAndDelete(applicationId)
             .then(async () => {
@@ -421,9 +414,6 @@ applicationCtrl.DeleteApplication = async (req, res) => {
 
 
                 // Remove applicationId from Student and related works or delete the works
-                await Student.findByIdAndUpdate(application.studentId, {
-                    $set: { applicationId: null }
-                })
 
                 await Work.deleteMany({ applicationId: application._id });
 
