@@ -13,6 +13,7 @@ const applicationRouter = require("./routes/ApplicationRoutes");
 const commentRouter = require("./routes/CommentRoutes");
 const projectRouter = require("./routes/ProjectRoutes");
 const stepperRouter = require("./routes/StepperRoutes");
+const authMiddleware = require('./middlewares/authMiddleware');
 
 const PORT = process.env.PORT || 8800;
 const ClientURL = process.env.ClientURL;
@@ -27,6 +28,9 @@ app.use(express.urlencoded({ extended: true }))
 app.use("/images", express.static(path.join(__dirname, "/public/images")))
 
 app.use("/api/auth", authRouter);
+
+app.use(authMiddleware)
+
 app.use("/api/admin", adminRouter);
 app.use("/api/employee", employeeRouter);
 app.use("/api/student", studentRouter);

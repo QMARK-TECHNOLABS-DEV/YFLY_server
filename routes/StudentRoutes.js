@@ -6,17 +6,17 @@ const adminCheckMiddleware = require("../middlewares/adminCheckMiddleware");
 const upload = require("../middlewares/multerToS3");
 const employeeChecker = require("../middlewares/employeeChecker");
 
-router.post("/create", authMiddleware, employeeChecker, upload.single('image'), studentCtrl.CreateStudent);
-router.get("/get-all", authMiddleware, employeeChecker, studentCtrl.GetAllStudents )
-router.get("/get/:id", authMiddleware, studentCtrl.GetStudent);
-router.put("/update/:id", authMiddleware, adminCheckMiddleware, upload.single('image'), studentCtrl.UpdateStudent)
-router.put("/change-password", authMiddleware, studentCtrl.ChangePassword);
+router.post("/create",  employeeChecker, upload.single('image'), studentCtrl.CreateStudent);
+router.get("/get-all",  employeeChecker, studentCtrl.GetAllStudents )
+router.get("/get/:id",  studentCtrl.GetStudent);
+router.put("/update/:id",  adminCheckMiddleware, upload.single('image'), studentCtrl.UpdateStudent)
+router.put("/change-password",  studentCtrl.ChangePassword);
 
-router.get("/get-application/:id", authMiddleware, studentCtrl.GetMyApplication)
+router.get("/get-application/:id",  studentCtrl.GetMyApplication)
 
-router.get("/get-my-applications/:id", authMiddleware, studentCtrl.GetAllOfMyApplications)
+router.get("/get-my-applications/:id",  studentCtrl.GetAllOfMyApplications)
 
-router.put("/deactivate/:id", authMiddleware, adminCheckMiddleware, studentCtrl.DeactivateStudent)
+router.put("/deactivate/:id",  adminCheckMiddleware, studentCtrl.DeactivateStudent)
 
 
 module.exports = router;

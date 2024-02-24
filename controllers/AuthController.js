@@ -3,11 +3,9 @@ const Employee = require("../models/EmployeeModel")
 const Student = require("../models/StudentModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
-const { maxAgeAccessCookie, maxAgeRefreshCookie,
-    generateAccessToken, generateRefreshToken } = require("../middlewares/tokenMiddlewares");
+const {generateAccessToken, generateRefreshToken } = require("../middlewares/tokenMiddlewares");
 const authCtrl = {};
 
 
@@ -47,12 +45,7 @@ authCtrl.Login = async (req, res) => {
 
         const { password, ...userInfo } = user;
 
-        // res.cookie('access_token', accessToken, { httpOnly: true, maxAge: maxAgeAccessCookie });
-        // res.cookie('refresh_token', refreshToken, { httpOnly: true, maxAge: maxAgeRefreshCookie })
-        res.cookie('access_token', accessToken, { httpOnly: true, sameSite: "None", secure: true, maxAge: maxAgeAccessCookie });
-        res.cookie('refresh_token', refreshToken, { httpOnly: true, sameSite: "None", secure: true, maxAge: maxAgeRefreshCookie })
-
-        res.status(200).json(userInfo)
+        res.status(200).json({userInfo, accessToken, refreshToken})
 
     } catch (error) {
         console.error(error)
@@ -62,26 +55,19 @@ authCtrl.Login = async (req, res) => {
 
 //Regenerate Access Token using Refresh Token;
 authCtrl.regenerateAccessToken = async (req, res) => {
-    const refreshToken = req.cookies.refresh_token;
+    const refreshToken = req.body.refreshToken;
+    console.log("therefreshToken", req.body.refreshToken)
 
-    if (typeof refreshToken !== 'string') return res.sendStatus(400);
+    if (typeof refreshToken !== 'string') return res.status(401).json({ msg: "No refresh token"})
 
-    try {
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-            if (err) return res.sendStatus(400)
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+        if (err) return res.status(401).json({ msg: "invalid refresh token" })
 
-            const accessToken = generateAccessToken({ userId: user._id, role: user.role });
+        const accessToken = generateAccessToken({ userId: user._id, role: user.role });
+        const refreshToken = generateRefreshToken({ userId: user._id, role: user.role })
 
-            res.cookie("access_token", accessToken, { httpOnly: true, maxAge: maxAgeAccessCookie })
-
-            res.json({ msg: "Access token regenerated" });
-        })
-
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({ msg: "Something went wrong" })
-
-    }
+        res.status(200).json({accessToken , refreshToken});
+    })
 
 }
 
@@ -90,15 +76,10 @@ authCtrl.regenerateAccessToken = async (req, res) => {
 authCtrl.Logout = async (req, res) => {
 
     try {
-        res.clearCookie("access_token");
-        res.clearCookie("refresh_token");
-
-        res.sendStatus(204)
-
+        res.status(200).json({msg:"logged out",userInfo:null, accessToken:null, refreshToken:null})
     } catch (error) {
         console.error(error)
         res.status(500).json({ msg: "Something went wrong" })
-
     }
 
 }
