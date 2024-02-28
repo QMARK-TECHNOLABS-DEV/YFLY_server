@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 const Comment = require("../models/CommentModel");
-const Application = require("../models/ApplicationModel");
+const Stepper = require("../models/StepperModel");
 const Project = require("../models/ProjectModel");
 const Employee = require("../models/EmployeeModel");
 const Task = require("../models/TaskModel");
 const ObjectId = mongoose.Types.ObjectId;
 const commentCtrl = {};
 
-// Get all Comments of an Application/Task of Project;
+// Get all Comments of an Stepper/Task of Project;
 commentCtrl.GetComments = async (req, res) => {
     const resourceId = req.params.id;
     const resourceType = req.params.type;
@@ -17,7 +17,7 @@ commentCtrl.GetComments = async (req, res) => {
         return res.status(400).json({ msg: "Invalid Id format" });
     }
 
-    if (!(resourceType === "application" || resourceType === "task")) {
+    if (!(resourceType === "stepper" || resourceType === "task")) {
         return res.status(400).json({ msg: "Resource type is invalid" })
     }
 
@@ -102,7 +102,7 @@ commentCtrl.AddComment = async (req, res) => {
         return res.status(400).json({ msg: "Invalid Comment" });
     };
 
-    if (!(resourceType === "application" || resourceType === "task")) {
+    if (!(resourceType === "stepper" || resourceType === "task")) {
         return res.status(400).json({ msg: "Resource Type is not valid" });
     };
 
@@ -112,11 +112,11 @@ commentCtrl.AddComment = async (req, res) => {
             if (!commentorExists) return res.status(404).json({ msg: "Commentor doesn't exist" })
         }
 
-        if (resourceType === "application") {
-            const applicationExists = await Application.findById(resourceId);
+        if (resourceType === "stepper") {
+            const StepperExists = await Stepper.findById(resourceId);
 
-            if (!applicationExists) {
-                return res.status(400).json({ msg: "Application doesn't exists" })
+            if (!StepperExists) {
+                return res.status(400).json({ msg: "Stepper doesn't exists" })
             }
         }
         else if (resourceType === "task") {
