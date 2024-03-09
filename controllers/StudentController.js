@@ -68,6 +68,7 @@ studentCtrl.GetAllStudents = async (req, res) => {
     const name = req.query.name;
     const office = req.query.office;
     const qualification = req.query.qualification;
+    const appstatus = req.query.appstatus;
 
     //search query;
     const searchQuery = req.query.search;
@@ -92,11 +93,26 @@ studentCtrl.GetAllStudents = async (req, res) => {
         isActive: true,
     }
 
-    console.log("filters", filters)
+    if(appstatus){
+        const applications = await Application.find({}, {_id:0, studentId:1})
+        const appliedStudents = applications.map((app)=> app.studentId)
+
+        if(appstatus === 'present'){
+
+            filters._id = {$in : appliedStudents}
+        }
+        else if(appstatus === 'absent'){
+
+            filters._id = {$nin : appliedStudents}
+
+        }
+    }
+
+    // console.log("filters", filters)
 
     try {
         const allStudents = await Student.find({ ...filters }, { password: 0 });
-        console.log(allStudents);
+        // console.log(allStudents);
 
         let result = allStudents.reverse();
 
