@@ -488,12 +488,7 @@ employeeCtrl.WorkAssign = async (req, res) => {
 
         console.log("newWork", newWork)
 
-        const savedWork = await newWork.save();
-
-        await Employee.findByIdAndUpdate(employeeId, {
-            $push: { currentWorks: savedWork._id }
-        });
-
+        await newWork.save();
 
         res.status(200).json({ msg: "Work Assigned", modifiedStepper })
     } catch (error) {
