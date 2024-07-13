@@ -5,6 +5,7 @@ const ObjectId = mongoose.Types.ObjectId;
 const isValidObjectId = mongoose.isValidObjectId
 const studentCtrl = {};
 const Application = require("../models/ApplicationModel");
+const Employee = require("../models/EmployeeModel");
 
 //Create Student;
 
@@ -93,17 +94,17 @@ studentCtrl.GetAllStudents = async (req, res) => {
         isActive: true,
     }
 
-    if(appstatus){
-        const applications = await Application.find({}, {_id:0, studentId:1})
-        const appliedStudents = applications.map((app)=> app.studentId)
+    if (appstatus) {
+        const applications = await Application.find({}, { _id: 0, studentId: 1 })
+        const appliedStudents = applications.map((app) => app.studentId)
 
-        if(appstatus === 'present'){
+        if (appstatus === 'present') {
 
-            filters._id = {$in : appliedStudents}
+            filters._id = { $in: appliedStudents }
         }
-        else if(appstatus === 'absent'){
+        else if (appstatus === 'absent') {
 
-            filters._id = {$nin : appliedStudents}
+            filters._id = { $nin: appliedStudents }
 
         }
     }
@@ -122,8 +123,8 @@ studentCtrl.GetAllStudents = async (req, res) => {
             } else {
                 result = result.slice(((page - 1) * 10), (page * 10))
             }
-        } 
-        
+        }
+
 
         res.status(200).json(result);
     } catch (error) {
@@ -346,7 +347,7 @@ studentCtrl.GetAllOfMyApplications = async (req, res) => {
 
     try {
 
-        const resultArray = await Application.find({studentId: new ObjectId(studentId)})
+        const resultArray = await Application.find({ studentId: new ObjectId(studentId) })
 
         res.status(200).json(resultArray.reverse());
     } catch (error) {
@@ -376,5 +377,219 @@ studentCtrl.DeactivateStudent = async (req, res) => {
     }
 }
 
+
+// followups from student collection itself ;
+
+studentCtrl.getSingleFollowup = async (req, res) => {
+
+    try {
+        const stdId = req.params.id;
+
+        const followups = await Student.aggregate([
+            { $match: { '_id': new ObjectId(stdId) } },
+            {
+                $lookup: {
+                    from: 'applications',
+                    localField: '_id',
+                    foreignField: 'studentId',
+                    as: 'applications'
+                }
+            },
+            {
+                $match: {
+                    'applications': { $size: 0 }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'employees',
+                    localField: 'assignee',
+                    foreignField: '_id',
+                    as: 'assigneeDetails'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'datas',
+                    let: { stageId: '$stage' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$name', 'stage'] } } },
+                        { $unwind: '$list' },
+                        { $match: { $expr: { $eq: ['$list._id', '$$stageId'] } } },
+                        { $project: { 'list.label': 1, 'list._id': 1 } }
+                    ],
+                    as: 'stageDetails'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    phone: 1,
+                    email: 1,
+                    assignee: 1,
+                    assigneeName: { $arrayElemAt: ['$assigneeDetails.name', 0] },
+                    stage: 1,
+                    stageName: { $arrayElemAt: ['$stageDetails.list.label', 0] },
+                    communication: 1,
+                }
+            },
+
+        ]);
+
+        console.log(followups);
+
+        // in frontend match the _ids in communication array with their labels in redux store
+
+
+        res.status(200).json({ followup: followups[0] ?? {} })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ msg: 'Something went wrong' })
+    }
+}
+
+studentCtrl.getFollowups = async (req, res) => {
+    try {
+
+        const { stage } = req.query
+
+        // Paginators
+        const page = req.query.page;
+        const entries = req.query.entries;
+
+        let filters = {};
+
+        if (stage) {
+            filters.stage = new ObjectId(stage)
+        }
+
+        const followups = await Student.aggregate([
+            {
+                $lookup: {
+                    from: 'applications',
+                    localField: '_id',
+                    foreignField: 'studentId',
+                    as: 'applications'
+                }
+            },
+            {
+                $match: {
+                    'applications': { $size: 0 }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'employees',
+                    localField: 'assignee',
+                    foreignField: '_id',
+                    as: 'assigneeDetails'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'datas',
+                    let: { stageId: '$stage' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$name', 'stage'] } } },
+                        { $unwind: '$list' },
+                        { $match: { $expr: { $eq: ['$list._id', '$$stageId'] } } },
+                        { $project: { 'list.label': 1, 'list._id': 1 } }
+                    ],
+                    as: 'stageDetails'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    phone: 1,
+                    email: 1,
+                    assignee: 1,
+                    assigneeName: { $arrayElemAt: ['$assigneeDetails.name', 0] },
+                    stage: 1,
+                    stageName: { $arrayElemAt: ['$stageDetails.list.label', 0] },
+                    communication: 1,
+                }
+            },
+
+            {
+                $match: {
+                    ...filters
+                }
+            }
+
+        ]);
+
+        console.log(followups);
+
+        // in frontend match the ObjectIds in communication array with their labels in redux store
+
+        let result = followups;
+
+        if (page) {
+            if (entries) {
+                result = result.slice(((page - 1) * entries), (page * entries))
+            } else {
+                result = result.slice(((page - 1) * 10), (page * 10))
+            }
+        }
+
+        res.status(200).json({ followups: result })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ msg: 'Something went wrong' })
+    }
+}
+
+
+studentCtrl.updateFollowup = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { assignee, stage, communication = [] } = req.body;
+
+        const updateObj = {}
+
+        if (assignee && isValidObjectId(assignee)) {
+            const assigneeExists = await Employee.findById(assignee)
+
+            if (assigneeExists) {
+                updateObj.assignee = assignee
+            }
+        }
+
+        if (stage && isValidObjectId(stage)) {
+            updateObj.stage = stage;
+        }
+
+        if (communication?.length) {
+            const altCommn = communication.filter((obj) => isValidObjectId(obj))
+
+            updateObj.communication = altCommn;
+        }
+
+        const updatedStudent = await Student.findByIdAndUpdate(id, {
+            $set: updateObj
+        }, { new: true })
+
+        if (!updatedStudent) { return res.status(404).json({ msg: "Followup not found" }) }
+
+        const followup = {
+            _id: updatedStudent?._id,
+            name: updatedStudent?.name,
+            email: updatedStudent?.email,
+            phone: updatedStudent?.phone,
+            assignee: updatedStudent?.assignee,
+            communication: updatedStudent?.communication,
+            stage: updatedStudent?.stage,
+
+        }
+
+        res.status(200).json({ msg: "Followup updated", followup })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ msg: 'Something went wrong' })
+    }
+}
+
 module.exports = studentCtrl;
- 

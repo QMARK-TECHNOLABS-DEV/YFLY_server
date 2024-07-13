@@ -18,5 +18,9 @@ router.get("/get-my-applications/:id",  studentCtrl.GetAllOfMyApplications)
 
 router.put("/deactivate/:id",  adminCheckMiddleware, studentCtrl.DeactivateStudent)
 
+router.get('/followup', employeeChecker, studentCtrl.getFollowups);
+router.get('/followup/:id', employeeChecker, studentCtrl.getSingleFollowup);
+router.put('/followup/:id', employeeChecker, studentCtrl.updateFollowup);
+
 
 module.exports = router;
