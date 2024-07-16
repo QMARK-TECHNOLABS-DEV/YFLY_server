@@ -21,4 +21,6 @@ router.get("/get-assigned-projects/:id",  employeeChecker, employeeCtrl.GetMyPro
 
 router.put("/assign-work",  employeeChecker, employeeCtrl.WorkAssign)
 
+router.get("/select-employee",  employeeChecker, employeeCtrl.SelectEmployee)
+
 module.exports = router;

@@ -497,5 +497,20 @@ employeeCtrl.WorkAssign = async (req, res) => {
     }
 }
 
+employeeCtrl.SelectEmployee = async (req, res) => {
+    try {
+        const employee = await Employee.find({ department: { $in: ["counselling", "registration"] } });
+        console.log(employee)
+
+        if (!employee) return res.status(404).json({ msg: "Employee Not Found" });
+
+        res.status(200).json(employee)
+
+    } catch (error) {
+        console.log(error + " Something went wrong");
+        res.status(500).json({ msg: "Internal Server Error" })
+    }
+}
+
 
 module.exports = employeeCtrl;
