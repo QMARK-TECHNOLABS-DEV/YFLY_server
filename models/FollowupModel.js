@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const FollowupSchema = new mongoose.Schema({
-    studentId:{type:mongoose.Types.ObjectId},
+    studentId:{type:mongoose.Types.ObjectId, unique:true, required:true , ref: 'Student'},
     assignee: { type: mongoose.Types.ObjectId, default: null, ref: 'Employee' },
     stage: { type: mongoose.Types.ObjectId, default: null },
     communication: [
@@ -10,7 +10,7 @@ const FollowupSchema = new mongoose.Schema({
     notes: [
         {
             type:{
-                author: { type: mongoose.Types.ObjectId },
+                author: { type: mongoose.Types.ObjectId ,ref: 'Employee'},
                 content: {type: String}
             }
         }

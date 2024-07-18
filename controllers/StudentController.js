@@ -626,4 +626,24 @@ studentCtrl.updateFollowup = async (req, res) => {
     }
 }
 
+studentCtrl.getOneFollowupDoc= async(req,res)=>{
+    try {
+        const stdId = req.params.id;
+
+        const followup = await Followup.findOne({studentId: new ObjectId(stdId)})
+        .populate('assignee', '_id name')
+        .populate('studentId', '_id name')
+        .populate('notes.author', '_id name')
+
+
+        // in frontend match the _ids in communication array with their labels in redux store
+
+
+        res.status(200).json({ followup })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ msg: 'Something went wrong' })
+    }
+}
+
 module.exports = studentCtrl;
