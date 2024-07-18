@@ -628,9 +628,9 @@ studentCtrl.updateFollowup = async (req, res) => {
 
 studentCtrl.getOneFollowupDoc= async(req,res)=>{
     try {
-        const stdId = req.params.id;
+        const followId = req.params.id;
 
-        const followup = await Followup.findOne({studentId: new ObjectId(stdId)})
+        const followup = await Followup.findById(followId)
         .populate('assignee', '_id name')
         .populate('studentId', '_id name')
         .populate('notes.author', '_id name')
@@ -640,6 +640,115 @@ studentCtrl.getOneFollowupDoc= async(req,res)=>{
 
 
         res.status(200).json({ followup })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ msg: 'Something went wrong' })
+    }
+}
+
+
+studentCtrl.getManyFollowupDocs = async (req, res) => {
+    try {
+
+        const { stage } = req.query
+
+        // Paginators
+        const page = req.query.page;
+        const entries = req.query.entries;
+
+        let filters = {};
+
+        if (stage && isValidObjectId(stage)) {
+            filters.stage = new ObjectId(stage)
+        }
+
+        const followups = await Student.aggregate([
+            {
+                $lookup: {
+                    from: 'applications',
+                    localField: '_id',
+                    foreignField: 'studentId',
+                    as: 'applications'
+                }
+            },
+            {
+                $match: {
+                    'applications': { $size: 0 }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'followups',
+                    localField: '_id',
+                    foreignField: 'studentId',
+                    as: 'followups'
+                }
+            },
+            {
+                $unwind: {
+                  path: '$followups',
+                  preserveNullAndEmptyArrays: true
+                }
+              },
+            {
+                $lookup: {
+                    from: 'employees',
+                    localField: 'followups.assignee',
+                    foreignField: '_id',
+                    as: 'assigneeDetails'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'datas',
+                    let: { stageId: '$followups.stage' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$name', 'stage'] } } },
+                        { $unwind: '$list' },
+                        { $match: { $expr: { $eq: ['$list._id', '$$stageId'] } } },
+                        { $project: { 'list.label': 1, 'list._id': 1 } }
+                    ],
+                    as: 'stageDetails'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    phone: 1,
+                    email: 1,
+                    assignee: '$followups.assignee',
+                    assigneeName: { $arrayElemAt: ['$assigneeDetails.name', 0] },
+                    stage: '$followups.stage',
+                    stageName: { $arrayElemAt: ['$stageDetails.list.label', 0] },
+                    communication: '$followups.communication',
+                    followup: '$followups._id'
+                }
+            },
+
+            {
+                $match: {
+                    ...filters
+                }
+            }
+
+        ]);
+
+        console.log(followups);
+
+        // in frontend match the ObjectIds in communication array with their labels in redux store
+
+        let result = followups;
+
+        if (page) {
+            if (entries) {
+                result = result.slice(((page - 1) * entries), (page * entries))
+            } else {
+                result = result.slice(((page - 1) * 10), (page * 10))
+            }
+        }
+
+        res.status(200).json({ followups: result })
     } catch (error) {
         console.log(error)
         res.status(500).json({ msg: 'Something went wrong' })
