@@ -5,7 +5,8 @@ const notificationSchema = new mongoose.Schema({
     notificationType:{ type: String},
     title: { type: String},
     body: { type: String},
-    isRead: { type: Boolean, default: false }
+    isRead: { type: Boolean, default: false },
+    route:{ type: String},
     
   },{timestamps:true});
   

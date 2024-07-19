@@ -51,7 +51,7 @@ notifyCtrl.saveFCMToken = async (req, res) => {
 
 notifyCtrl.notificationSender = async (req, res) => {
     try {
-        const { userId, title, body, notificationType } = req.body;
+        const { userId, title, body, notificationType, route } = req.body;
         console.log(req.body)
 
         const admin = await Admin.findById(userId);
@@ -76,6 +76,7 @@ notifyCtrl.notificationSender = async (req, res) => {
             notificationType,
             title: title,
             body: body,
+            route
         }
 
         const notification = await Notification.create(createObj)
@@ -92,7 +93,8 @@ notifyCtrl.notificationSender = async (req, res) => {
             data: {
                 docId: String(notification?._id),
                 userId,
-                notificationType
+                notificationType,
+                route
             },
             token: tokens[tokens.length - 1],
         };
