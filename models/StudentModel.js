@@ -20,13 +20,6 @@ const StudentSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: true },
     office: { type: String },
 
-    assignee: { type: mongoose.Types.ObjectId, default: null, ref: 'Employee' },
-    stage: { type: mongoose.Types.ObjectId, default: null },
-    communication: [
-        { type: mongoose.Types.ObjectId }
-    ],
-    
-
 }, { timestamps: true })
 
 const Student = mongoose.model("Student", StudentSchema);
