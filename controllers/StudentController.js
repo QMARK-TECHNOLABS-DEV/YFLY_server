@@ -636,7 +636,7 @@ studentCtrl.getOneFollowupDoc= async(req,res)=>{
 studentCtrl.getManyFollowupDocs = async (req, res) => {
     try {
 
-        const { stage } = req.query
+        const { stage , assignee} = req.query
 
         // Paginators
         const page = req.query.page;
@@ -646,6 +646,10 @@ studentCtrl.getManyFollowupDocs = async (req, res) => {
 
         if (stage && isValidObjectId(stage)) {
             filters.stage = new ObjectId(stage)
+        }
+
+        if (assignee && isValidObjectId(assignee)) {
+            filters.assignee = new ObjectId(assignee)
         }
 
         const followups = await Student.aggregate([
