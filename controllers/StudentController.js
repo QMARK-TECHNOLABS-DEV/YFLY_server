@@ -14,7 +14,7 @@ studentCtrl.CreateStudent = async (req, res) => {
 
     const { name, email, password, phone,
         birthDate, age, qualification,
-        address, office } = req.body;
+        address, office , enquiryRoute} = req.body;
 
     console.log(req.body);
     console.log("address", req.body.address);
@@ -51,7 +51,7 @@ studentCtrl.CreateStudent = async (req, res) => {
             name, email,
             password: hashedPassword,
             phone, birthDate, age,
-            qualification, address, image, office
+            qualification, address, image, office, enquiryRoute
         });
 
         const savedDoc = await newDocument.save();
@@ -79,9 +79,12 @@ studentCtrl.GetAllStudents = async (req, res) => {
     const page = req.query.page;
     const entries = req.query.entries;
 
-    const ORArray = [{ name: { $regex: new RegExp(searchQuery, "i") } },
+    const ORArray = [
+        { name: { $regex: new RegExp(searchQuery, "i") } },
     { email: { $regex: new RegExp(searchQuery, "i") } },
-    { qualification: { $regex: new RegExp(searchQuery, "i") } }];
+    { qualification: { $regex: new RegExp(searchQuery, "i") } },
+    { enquiryRoute: { $regex: new RegExp(searchQuery, "i") } },
+];
 
     if (ObjectId.isValid(searchQuery)) {
         ORArray.push({ _id: new ObjectId(searchQuery) }, { applicationId: new ObjectId(searchQuery) })

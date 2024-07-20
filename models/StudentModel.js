@@ -19,6 +19,8 @@ const StudentSchema = new mongoose.Schema({
     image: { type: String },
     isActive: { type: Boolean, default: true },
     office: { type: String },
+    enquiryRoute: { type: String },
+
 
 }, { timestamps: true })
 
