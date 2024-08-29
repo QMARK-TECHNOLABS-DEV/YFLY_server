@@ -809,7 +809,7 @@ studentCtrl.getManyFollowupDocs = async (req, res) => {
 
         ]);
 
-        console.log(followups);
+        // console.log(followups);
 
         // in frontend match the ObjectIds in communication array with their labels in redux store
 

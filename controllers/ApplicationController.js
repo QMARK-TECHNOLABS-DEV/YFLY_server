@@ -189,7 +189,7 @@ applicationCtrl.GetAllApplications = async (req, res) => {
     };
 
 
-    console.log(filters);
+    // console.log(filters);
 
     try {
 
@@ -269,7 +269,7 @@ applicationCtrl.GetAllApplications = async (req, res) => {
         ]);
 
 
-        console.log("all-applications", allApplications);
+        // console.log("all-applications", allApplications);
 
         let result = allApplications;
 

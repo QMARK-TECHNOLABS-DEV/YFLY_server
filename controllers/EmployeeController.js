@@ -79,7 +79,7 @@ employeeCtrl.GetAllEmployees = async (req, res) => {
     const name = req.query.name;
     const email = req.query.email;
     const searchQuery = req.query.search;
-    console.log("department", department)
+    // console.log("department", department)
 
     // Paginators
     const page = req.query.page;
@@ -104,7 +104,7 @@ employeeCtrl.GetAllEmployees = async (req, res) => {
 
     try {
         const allEmployees = await Employee.find({ isActive: true, ...filters }, { password: 0 });
-        console.log("allEmployeess", allEmployees);
+        // console.log("allEmployeess", allEmployees);
 
         let result
 
@@ -339,7 +339,7 @@ employeeCtrl.RetrieveWorks = async (req, res) => {
 
         ])
 
-        console.log("result", result)
+        // console.log("result", result)
 
         res.status(200).json(result.reverse())
 
@@ -501,7 +501,7 @@ employeeCtrl.WorkAssign = async (req, res) => {
 employeeCtrl.SelectEmployee = async (req, res) => {
     try {
         const employee = await Employee.find({ department: { $in: ["counselling", "registration"] } });
-        console.log(employee)
+        // console.log(employee)
 
         if (!employee) return res.status(404).json({ msg: "Employee Not Found" });
 
