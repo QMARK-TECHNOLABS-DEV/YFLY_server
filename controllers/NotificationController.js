@@ -199,4 +199,92 @@ notifyCtrl.alterReadStatus = async(req,res)=>{
     }
 }
 
+
+// send multiple notifications
+notifyCtrl.mutipleNotificationsSender = async (req, res) => {
+    try {
+        const { userIdList, title, body, notificationType, route } = req.body;
+        console.log(req.body);
+
+        if (!Array.isArray(userIdList) || !userIdList.length) {
+            return res.status(400).json({ msg: "userIdList is required and should be a non-empty array" });
+        }
+
+        const users = await Promise.all([
+            Admin.find({ _id: { $in: userIdList } }),
+            Employee.find({ _id: { $in: userIdList } })
+        ]);
+
+        const allUsers = [...users[0], ...users[1]];
+        const notifications = [];
+        const failedUsers = [];
+
+        for (const user of allUsers) {
+            const createObj = {
+                userId: user._id,
+                notificationType,
+                title: title,
+                body: body,
+                route
+            };
+
+            const notification = await Notification.create(createObj);
+            notifications.push(notification);
+
+            if (!notification) {
+                failedUsers.push(user._id);
+                continue;
+            }
+
+            const tokens = user?.fcmTokens;
+            if (!(Array.isArray(tokens) && tokens.length)) {
+                failedUsers.push(user._id);
+                continue;
+            }
+
+            // Send notifications to all tokens for the user
+            const payload = {
+                notification: {
+                    title: title,
+                    body: body,
+                },
+                data: {
+                    docId: String(notification?._id),
+                    userId: String(user._id),
+                    notificationType,
+                    route
+                }
+            };
+
+            const sendPromises = tokens.map(token => 
+                sendNotification(token, { ...payload, token })
+            );
+
+            const responses = await Promise.all(sendPromises);
+
+            responses.forEach((response, index) => {
+                if (!response) {
+                    console.log(`Failed to send notification to token: ${tokens[index]} for user ID: ${user._id}`);
+                } else {
+                    console.log(`Successfully sent message to token: ${tokens[index]} for user ID: ${user._id}`, response);
+                }
+            });
+        }
+
+        if (failedUsers.length) {
+            console.log(`Failed to process notifications for user IDs: ${failedUsers.join(', ')}`);
+        }
+
+        res.status(200).json({ 
+            msg: 'Notifications processed successfully', 
+            failedUsers 
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ msg: 'Failed to process notifications' });
+    }
+};
+
+
 module.exports = notifyCtrl;
