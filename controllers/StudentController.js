@@ -753,11 +753,6 @@ studentCtrl.getManyFollowupDocs = async (req, res) => {
                 }
             },
             {
-                $match: {
-                    'applications': { $size: 0 }
-                }
-            },
-            {
                 $lookup: {
                     from: 'followups',
                     localField: '_id',

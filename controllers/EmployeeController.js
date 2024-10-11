@@ -259,6 +259,16 @@ employeeCtrl.RetrieveWorks = async (req, res) => {
 
     if (!employeeId) return res.status(400).json({ msg: "Invalid Employee Id" });
 
+    const {status} = req.query;
+
+    const filters = {
+        assignee: new ObjectId(employeeId),
+    }
+
+    if(status && ['completed', 'pending', 'ongoing']?.includes(status)){
+        filters.stepStatus = { $eq: status } 
+    }
+
     try {
         const employee = await Employee.findById(employeeId);
         if (!employee) return res.status(404).json({ msg: "Employee Not Found" });
@@ -266,7 +276,7 @@ employeeCtrl.RetrieveWorks = async (req, res) => {
 
         const result = await Work.aggregate([
             {
-                $match: { assignee: new ObjectId(employeeId), stepStatus: { $ne: "completed" } }
+                $match: filters
             },
             {
                 $lookup: {
