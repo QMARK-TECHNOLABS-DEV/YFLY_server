@@ -11,7 +11,8 @@ const FollowupSchema = new mongoose.Schema({
         {
             type:{
                 author: { type: mongoose.Types.ObjectId ,ref: 'Employee'},
-                content: {type: String}
+                content: {type: String},
+                date:{type: Date}
             }
         }
     ]

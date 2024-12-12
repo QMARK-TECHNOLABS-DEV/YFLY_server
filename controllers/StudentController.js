@@ -658,8 +658,10 @@ studentCtrl.updateFollowup = async (req, res) => {
         }
 
         if (isValidObjectId(author) && contents?.length) {
-            const newNotes = contents?.map(item => ({ author: new ObjectId(author), content: item?.trim() }))
-            console.log(newNotes)
+            const newNotes = contents?.map(item => ({ 
+                author: new ObjectId(author), content: item?.trim(), date: Date.now()
+            }))
+
             alterObj.notes = newNotes
         }
 
