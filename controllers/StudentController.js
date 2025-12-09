@@ -730,13 +730,15 @@ studentCtrl.updateFollowup = async (req, res) => {
       alterObj.notes = newNotes;
     }
 
-    // Handle attachments from uploaded files (local storage)
+    // Handle attachments from uploaded files (support DO or local storage)
     let newAttachments = [];
     if (req.files && req.files.length > 0) {
       newAttachments = req.files.map((file) => ({
         name: file.originalname,
-        key: file.filename, // local filename
-        location: `/uploads/${file.filename}`, // local path
+        key: file.key || file.filename,
+        location:
+          file.location ||
+          (file.filename ? `/uploads/${file.filename}` : undefined),
       }));
     }
 
@@ -1041,13 +1043,94 @@ studentCtrl.deleteFollowupAttachment = async (req, res) => {
       return res.status(404).json({ msg: "Attachment not found" });
     }
 
-    // Delete file from local storage
+    // Delete file from local storage only when it's a local uploads path
     const fs = require("fs");
     const path = require("path");
-    const filePath = path.join(__dirname, "..", attachment.location);
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    try {
+      // attachment.location can be like '/uploads/filename' or 'uploads/filename'
+      const rel = attachment.location
+        ? attachment.location.replace(/^\/+/, "")
+        : null;
+
+      // Only attempt to delete files under uploads (local storage). Skip S3 urls
+      if (rel && rel.startsWith("uploads")) {
+        const filePath = path.join(__dirname, "..", rel);
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+            console.log(`Deleted local attachment file: ${filePath}`);
+          } catch (unlinkErr) {
+            console.warn(
+              `Failed to delete file ${filePath}:`,
+              unlinkErr.message || unlinkErr
+            );
+          }
+        } else {
+          console.warn(`Local file not found for deletion: ${filePath}`);
+        }
+      } else {
+        // probably an S3/Spaces URL/key or not a local upload - try remote deletion for DO Spaces
+        console.log(
+          "Attachment appears remote, attempting remote deletion if possible:",
+          attachment.location
+        );
+
+        if (attachment.key) {
+          try {
+            // Use DO Spaces credentials (S3-compatible) to delete remote object
+            const {
+              S3Client,
+              DeleteObjectCommand,
+            } = require("@aws-sdk/client-s3");
+
+            const doEndpoint =
+              process.env.DO_SPACES_ENDPOINT || process.env.S3_ENDPOINT || null;
+            const doBucket =
+              process.env.DO_SPACES_BUCKET || process.env.S3_BUCKET;
+            const doKey =
+              process.env.DO_SPACES_KEY || process.env.AWS_ACCESS_KEY_ID;
+            const doSecret =
+              process.env.DO_SPACES_SECRET || process.env.AWS_SECRET_ACCESS_KEY;
+
+            if (doBucket && doKey && doSecret) {
+              const client = new S3Client({
+                region: process.env.S3_REGION || "us-east-1",
+                endpoint: doEndpoint,
+                credentials: { accessKeyId: doKey, secretAccessKey: doSecret },
+              });
+
+              const delCmd = new DeleteObjectCommand({
+                Bucket: doBucket,
+                Key: attachment.key,
+              });
+              await client.send(delCmd);
+              console.log(
+                "Deleted remote attachment from DO/S3:",
+                attachment.key
+              );
+            } else {
+              console.warn(
+                "DO credentials or bucket missing; skipping remote deletion"
+              );
+            }
+          } catch (err) {
+            console.warn(
+              "Failed to delete remote attachment:",
+              err.message || err
+            );
+          }
+        } else {
+          console.log(
+            "No remote key present on attachment; skipping remote deletion"
+          );
+        }
+      }
+    } catch (e) {
+      console.warn(
+        "Error while attempting to delete local attachment file:",
+        e.message || e
+      );
     }
 
     const updatedFollowup = await Followup.findByIdAndUpdate(
@@ -1056,12 +1139,10 @@ studentCtrl.deleteFollowupAttachment = async (req, res) => {
       { new: true }
     );
 
-    res
-      .status(200)
-      .json({
-        msg: "Attachment deleted successfully",
-        followup: updatedFollowup,
-      });
+    res.status(200).json({
+      msg: "Attachment deleted successfully",
+      followup: updatedFollowup,
+    });
   } catch (error) {
     console.log("deleteFollowupAttachment error:", error);
     res.status(500).json({ msg: "Something went wrong", error: error.message });

@@ -4,7 +4,7 @@ const studentCtrl = require("../controllers/StudentController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const adminCheckMiddleware = require("../middlewares/adminCheckMiddleware");
 const upload = require("../middlewares/multerToS3");
-const uploadLocal = require("../middlewares/multerMiddleware");
+const uploadDO = require("../middlewares/multerToDO");
 const employeeChecker = require("../middlewares/employeeChecker");
 
 router.post(
@@ -34,7 +34,7 @@ router.get("/followup/:id", employeeChecker, studentCtrl.getOneFollowupDoc);
 router.put(
   "/followup",
   employeeChecker,
-  uploadLocal.array("attachments", 10),
+  uploadDO.array("attachments", 10),
   studentCtrl.updateFollowup
 );
 
