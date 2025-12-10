@@ -47,5 +47,16 @@ app.use("/api/stepper", stepperRouter);
 app.use("*", (req, res) => {
   res.sendStatus(404);
 });
+//app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Export the Express app for serverless platforms (Vercel). When running
+// locally with `node app.js` the server will still be started because
+// `app.js` is the entry point; however Vercel imports this file and uses
+// the wrapper in `api/index.js` which expects the app to be exported.
+module.exports = app;
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// If this file is executed directly (`node app.js`) start the server
+// This keeps local development behavior intact while allowing Vercel
+// to import the app without starting a listener.
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
